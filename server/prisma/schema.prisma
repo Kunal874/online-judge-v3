@@ -1,0 +1,38 @@
+// Prisma schema — grows incrementally as each milestone needs new models.
+// See the project plan for the full intended shape (Problem/TestCase/Submission
+// land in later milestones).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  handle        String   @unique
+  name          String
+  role          Role     @default(USER)
+  emailVerified Boolean  @default(false)
+
+  // Hashed the same way passwordHash is — a DB leak shouldn't hand out usable tokens.
+  emailVerifyTokenHash String?   @unique
+  emailVerifyExpires   DateTime?
+  resetTokenHash       String?   @unique
+  resetTokenExpires    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}

@@ -5,6 +5,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(8000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 });
 
 // Fail fast on boot if the environment is misconfigured, rather than
