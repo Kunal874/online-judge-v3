@@ -9,3 +9,12 @@ export function validateBody<T>(schema: ZodType<T>) {
     next();
   };
 }
+
+// Same idea for query strings — also responsible for turning "?page=2"
+// into a real number via the schema's z.coerce fields.
+export function validateQuery<T>(schema: ZodType<T>) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    req.query = schema.parse(req.query) as never;
+    next();
+  };
+}

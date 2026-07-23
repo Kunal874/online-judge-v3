@@ -12,9 +12,19 @@ export default function Navbar() {
 
   return (
     <nav className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-      <Link to="/" className="font-semibold">
-        Online Judge
-      </Link>
+      <div className="flex items-center gap-4">
+        <Link to="/" className="font-semibold">
+          Online Judge
+        </Link>
+        <Link to="/problems" className="text-sm">
+          Problems
+        </Link>
+        {user?.role === "ADMIN" && (
+          <Link to="/admin/problems" className="text-sm">
+            Admin
+          </Link>
+        )}
+      </div>
       <div className="flex items-center gap-4 text-sm">
         {isLoading ? null : user ? (
           <>

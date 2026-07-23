@@ -36,3 +36,29 @@ model User {
 
   @@index([email])
 }
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Problem {
+  id            String     @id @default(cuid())
+  slug          String     @unique
+  title         String
+  statement     String
+  difficulty    Difficulty
+  tags          String[]
+  constraints   String?
+  timeLimitMs   Int        @default(2000)
+  memoryLimitKb Int        @default(262144)
+  isPublished   Boolean    @default(false)
+  contestId     String? // reserved for a future Contest relation, unused for now
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([difficulty])
+  @@index([tags], type: Gin)
+}

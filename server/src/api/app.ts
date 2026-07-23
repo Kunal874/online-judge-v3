@@ -6,6 +6,8 @@ import pinoHttp from "pino-http";
 import { env } from "../config/env.js";
 import { logger } from "../lib/logger.js";
 import { authRouter } from "./routes/auth.routes.js";
+import { problemRouter } from "./routes/problem.routes.js";
+import { adminProblemRouter } from "./routes/admin/problem.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -22,6 +24,8 @@ export function createApp() {
   });
 
   app.use("/auth", authRouter);
+  app.use("/problems", problemRouter);
+  app.use("/admin/problems", adminProblemRouter);
 
   // Must be last: catches errors from every route above.
   app.use(errorHandler);
