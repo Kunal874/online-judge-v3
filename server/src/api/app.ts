@@ -10,6 +10,7 @@ import { problemRouter } from "./routes/problem.routes.js";
 import { adminProblemRouter } from "./routes/admin/problem.routes.js";
 import { runRouter } from "./routes/run.routes.js";
 import { submissionRouter } from "./routes/submission.routes.js";
+import { userRouter } from "./routes/user.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -32,6 +33,7 @@ export function createApp() {
   app.use("/admin/problems", adminProblemRouter);
   app.use("/run", runRouter);
   app.use("/submissions", submissionRouter);
+  app.use("/users", userRouter);
 
   // Must be last: catches errors from every route above.
   app.use(errorHandler);

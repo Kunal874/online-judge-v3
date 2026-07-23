@@ -10,15 +10,17 @@ export default function ProblemListPage() {
   const page = Number(searchParams.get("page") ?? "1");
   const difficulty = searchParams.get("difficulty") ?? "";
   const search = searchParams.get("search") ?? "";
+  const tag = searchParams.get("tag") ?? "";
 
   const { data, isPending, isError } = useQuery({
-    queryKey: ["problems", { page, difficulty, search }],
+    queryKey: ["problems", { page, difficulty, search, tag }],
     queryFn: () =>
       fetchProblems({
         page,
         pageSize: PAGE_SIZE,
         difficulty: difficulty || undefined,
         search: search || undefined,
+        tag: tag || undefined,
       }),
   });
 
@@ -36,7 +38,7 @@ export default function ProblemListPage() {
     <main className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="mb-6 text-2xl font-semibold">Problems</h1>
 
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-wrap gap-3">
         <input
           type="text"
           placeholder="Search by title..."
@@ -44,7 +46,7 @@ export default function ProblemListPage() {
           onKeyDown={(e) => {
             if (e.key === "Enter") updateParam("search", e.currentTarget.value);
           }}
-          className="flex-1 rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
+          className="min-w-0 flex-1 rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
         />
         <select
           value={difficulty}
@@ -56,7 +58,28 @@ export default function ProblemListPage() {
           <option value="MEDIUM">Medium</option>
           <option value="HARD">Hard</option>
         </select>
+        <input
+          type="text"
+          placeholder="Filter by tag..."
+          defaultValue={tag}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") updateParam("tag", e.currentTarget.value);
+          }}
+          className="w-40 rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
+        />
       </div>
+
+      {tag && (
+        <div className="mb-4 flex items-center gap-2 text-xs text-slate-500">
+          Filtering by tag:
+          <button
+            onClick={() => updateParam("tag", "")}
+            className="rounded bg-slate-100 px-2 py-0.5 hover:line-through dark:bg-slate-800"
+          >
+            {tag} ×
+          </button>
+        </div>
+      )}
 
       {isPending && <p className="text-slate-500">Loading...</p>}
       {isError && <p className="text-red-600 dark:text-red-400">Failed to load problems.</p>}
@@ -65,7 +88,13 @@ export default function ProblemListPage() {
       )}
 
       <div className="flex flex-col gap-2">
-        {data?.items.map((problem) => <ProblemCard key={problem.id} problem={problem} />)}
+        {data?.items.map((problem) => (
+          <ProblemCard
+            key={problem.id}
+            problem={problem}
+            onTagClick={(t) => updateParam("tag", t)}
+          />
+        ))}
       </div>
 
       {data && data.total > PAGE_SIZE && (
