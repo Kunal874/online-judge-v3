@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DIFFICULTIES } from "../types/index.js";
+import { sampleTestCaseSchema } from "./testcase.js";
 
 export const difficultySchema = z.enum(DIFFICULTIES);
 
@@ -46,5 +47,6 @@ export const publicProblemDetailSchema = publicProblemSummarySchema.extend({
   constraints: z.string().nullable(),
   timeLimitMs: z.number(),
   memoryLimitKb: z.number(),
+  sampleTestCases: z.array(sampleTestCaseSchema),
 });
 export type PublicProblemDetail = z.infer<typeof publicProblemDetailSchema>;

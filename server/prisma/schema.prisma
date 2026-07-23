@@ -59,6 +59,25 @@ model Problem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  testCases TestCase[]
+
   @@index([difficulty])
   @@index([tags], type: Gin)
+}
+
+// isHidden:false rows ARE the "sample test cases" shown on the problem
+// page — no separate sampleTestCases table needed, one model covers both.
+model TestCase {
+  id             String  @id @default(cuid())
+  problemId      String
+  problem        Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  input          String
+  expectedOutput String
+  isHidden       Boolean @default(true)
+  orderIndex     Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([problemId])
 }

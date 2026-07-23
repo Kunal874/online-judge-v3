@@ -51,10 +51,18 @@ export async function listProblems(query: ProblemListQuery, includeUnpublished =
 export async function getPublishedProblemBySlug(slug: string) {
   const problem = await prisma.problem.findFirst({
     where: { slug, isPublished: true },
-    select: DETAIL_SELECT,
+    select: {
+      ...DETAIL_SELECT,
+      testCases: {
+        where: { isHidden: false },
+        select: { id: true, input: true, expectedOutput: true, orderIndex: true },
+        orderBy: { orderIndex: "asc" },
+      },
+    },
   });
   if (!problem) throw new NotFoundError("Problem not found");
-  return problem;
+  const { testCases: sampleTestCases, ...rest } = problem;
+  return { ...rest, sampleTestCases };
 }
 
 export async function getProblemById(id: string) {

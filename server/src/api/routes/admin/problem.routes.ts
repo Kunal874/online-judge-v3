@@ -3,6 +3,7 @@ import * as problemController from "../../controllers/problem.controller.js";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import { validateBody, validateQuery } from "../../middleware/validate.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { adminTestCaseRouter } from "./testcase.routes.js";
 import {
   createProblemSchema,
   problemListQuerySchema,
@@ -13,6 +14,8 @@ export const adminProblemRouter = Router();
 
 // Every route here requires an authenticated admin.
 adminProblemRouter.use(requireAuth, requireRole("ADMIN"));
+
+adminProblemRouter.use("/:problemId/testcases", adminTestCaseRouter);
 
 adminProblemRouter.get(
   "/",

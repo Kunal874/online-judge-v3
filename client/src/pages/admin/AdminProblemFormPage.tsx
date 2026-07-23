@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { isAxiosError } from "axios";
 import type { Difficulty } from "@online-judge/shared";
 import { createProblem, fetchAdminProblem, updateProblem, type AdminProblem } from "../../api/problems";
+import TestCaseManager from "./TestCaseManager";
 
 interface FormState {
   title: string;
@@ -202,6 +203,8 @@ function ProblemForm({
           {saveMutation.isPending ? "Saving..." : "Save"}
         </button>
       </form>
+
+      {isEditing && id && <TestCaseManager problemId={id} />}
     </main>
   );
 }
