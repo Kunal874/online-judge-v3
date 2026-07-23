@@ -12,6 +12,7 @@
     "dev:api": "npm run dev -w server",
     "lint": "eslint .",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w client",
+    "test": "npm run test -w server",
     "format": "prettier --write ."
   },
   "devDependencies": {
