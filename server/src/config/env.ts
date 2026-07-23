@@ -13,6 +13,12 @@ const envSchema = z.object({
   DOCKER_SOCKET_PATH: z.string().optional(),
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).default(2),
+  // Unset = auto-create an Ethereal test SMTP account (dev only, nothing
+  // is actually delivered). Set these once there's a real mail provider.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
 });
 
 // Fail fast on boot if the environment is misconfigured, rather than

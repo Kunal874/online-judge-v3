@@ -1,4 +1,10 @@
-import type { LoginInput, PublicUser, RegisterInput } from "@online-judge/shared";
+import type {
+  ForgotPasswordInput,
+  LoginInput,
+  PublicUser,
+  RegisterInput,
+  ResetPasswordInput,
+} from "@online-judge/shared";
 import { apiClient } from "./client";
 
 export async function fetchMe(): Promise<PublicUser | null> {
@@ -22,4 +28,20 @@ export async function loginRequest(input: LoginInput): Promise<PublicUser> {
 
 export async function logoutRequest(): Promise<void> {
   await apiClient.post("/auth/logout");
+}
+
+export async function verifyEmailRequest(token: string): Promise<void> {
+  await apiClient.post("/auth/verify-email", { token });
+}
+
+export async function resendVerificationRequest(): Promise<void> {
+  await apiClient.post("/auth/resend-verification");
+}
+
+export async function forgotPasswordRequest(input: ForgotPasswordInput): Promise<void> {
+  await apiClient.post("/auth/forgot-password", input);
+}
+
+export async function resetPasswordRequest(input: ResetPasswordInput): Promise<void> {
+  await apiClient.post("/auth/reset-password", input);
 }

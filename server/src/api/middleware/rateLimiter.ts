@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 // Tight limit on auth endpoints to slow down brute-forcing / registration abuse.
 export const authLimiter = rateLimit({
@@ -17,6 +17,10 @@ export const judgeLimiter = rateLimit({
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id ?? req.ip ?? "unknown",
+  // req.ip alone is unsafe here: the same IPv6 address has multiple valid
+  // textual forms, so a raw-string key lets a client dodge the limit just
+  // by varying how it writes its own address. ipKeyGenerator normalizes
+  // that before it's used as a key.
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip ?? "unknown"),
   message: { error: "Too many run/submit requests. Please slow down." },
 });

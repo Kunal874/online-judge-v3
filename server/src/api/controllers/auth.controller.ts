@@ -1,7 +1,15 @@
 import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { signAuthToken } from "../../lib/jwt.js";
-import { registerUser, loginUser, toPublicUser } from "../services/auth.service.js";
+import {
+  registerUser,
+  loginUser,
+  toPublicUser,
+  requestEmailVerification,
+  verifyEmail,
+  requestPasswordReset,
+  resetPassword,
+} from "../services/auth.service.js";
 import { UnauthorizedError } from "../../lib/errors.js";
 import { prisma } from "../../db/prisma.js";
 import type { UserModel as User } from "../../generated/prisma/models.js";
@@ -40,4 +48,26 @@ export async function me(req: Request, res: Response) {
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
   if (!user) throw new UnauthorizedError();
   res.json({ user: toPublicUser(user) });
+}
+
+export async function verifyEmailHandler(req: Request, res: Response) {
+  await verifyEmail(req.body.token);
+  res.status(204).send();
+}
+
+export async function resendVerification(req: Request, res: Response) {
+  if (!req.user) throw new UnauthorizedError();
+  await requestEmailVerification(req.user.id);
+  res.status(204).send();
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+  await requestPasswordReset(req.body.email);
+  // Always 200 regardless of whether the email exists — see the service.
+  res.status(204).send();
+}
+
+export async function resetPasswordHandler(req: Request, res: Response) {
+  await resetPassword(req.body.token, req.body.newPassword);
+  res.status(204).send();
 }

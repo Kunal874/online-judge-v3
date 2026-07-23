@@ -1,16 +1,28 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { fetchUserProfile } from "../api/users";
+import { resendVerificationRequest } from "../api/auth";
 import Heatmap from "../components/profile/Heatmap";
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   const { data: profile, isPending } = useQuery({
     queryKey: ["profile", user?.handle],
     queryFn: () => fetchUserProfile(user!.handle),
     enabled: !!user,
   });
+
+  async function handleResend() {
+    setResendState("sending");
+    try {
+      await resendVerificationRequest();
+    } finally {
+      setResendState("sent");
+    }
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
@@ -19,6 +31,19 @@ export default function ProfilePage() {
         <span className="font-medium text-slate-900 dark:text-slate-100">{user?.handle}</span> (
         {user?.email})
       </p>
+
+      {user && !user.emailVerified && (
+        <div className="mt-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          Your email isn't verified yet.{" "}
+          {resendState === "sent" ? (
+            <span>Verification email sent — check your inbox.</span>
+          ) : (
+            <button onClick={handleResend} disabled={resendState === "sending"} className="underline">
+              {resendState === "sending" ? "Sending..." : "Resend verification email"}
+            </button>
+          )}
+        </div>
+      )}
 
       {isPending && <p className="mt-6 text-slate-500">Loading stats...</p>}
 

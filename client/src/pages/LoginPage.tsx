@@ -60,6 +60,9 @@ export default function LoginPage() {
           Register
         </Link>
       </p>
+      <Link to="/forgot-password" className="text-sm underline">
+        Forgot password?
+      </Link>
     </main>
   );
 }
