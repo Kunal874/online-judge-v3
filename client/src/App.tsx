@@ -5,6 +5,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import ProblemListPage from "./pages/ProblemListPage";
 import ProblemDetailPage from "./pages/ProblemDetailPage";
+import SubmissionsPage from "./pages/SubmissionsPage";
+import SubmissionDetailPage from "./pages/SubmissionDetailPage";
 import AdminProblemsPage from "./pages/admin/AdminProblemsPage";
 import AdminProblemFormPage from "./pages/admin/AdminProblemFormPage";
 import Navbar from "./components/layout/Navbar";
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="/problems/:slug" element={<ProblemDetailPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/submissions" element={<SubmissionsPage />} />
+          <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
         </Route>
         <Route element={<ProtectedRoute role="ADMIN" />}>
           <Route path="/admin/problems" element={<AdminProblemsPage />} />

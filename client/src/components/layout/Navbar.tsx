@@ -28,6 +28,7 @@ export default function Navbar() {
       <div className="flex items-center gap-4 text-sm">
         {isLoading ? null : user ? (
           <>
+            <Link to="/submissions">Submissions</Link>
             <Link to="/profile">{user.handle}</Link>
             <button onClick={handleLogout} className="text-slate-500 hover:underline">
               Log out

@@ -34,6 +34,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  submissions Submission[]
+
   @@index([email])
 }
 
@@ -59,7 +61,8 @@ model Problem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  testCases TestCase[]
+  testCases   TestCase[]
+  submissions Submission[]
 
   @@index([difficulty])
   @@index([tags], type: Gin)
@@ -79,5 +82,70 @@ model TestCase {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  results TestCaseResult[]
+
   @@index([problemId])
+}
+
+enum Language {
+  CPP
+  C
+  JAVA
+  PYTHON
+}
+
+enum Verdict {
+  PENDING
+  RUNNING
+  ACCEPTED
+  WRONG_ANSWER
+  COMPILE_ERROR
+  RUNTIME_ERROR
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  INTERNAL_ERROR
+}
+
+model Submission {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  language  Language
+  code      String
+  verdict   Verdict  @default(PENDING)
+
+  // Truncated compiler/internal error only — never a raw stack trace.
+  errorMessage String?
+  runtimeMs    Int? // max across test cases
+  memoryKb     Int? // max across test cases
+  passedCount  Int  @default(0)
+  totalCount   Int  @default(0)
+  contestId    String? // reserved for a future Contest relation, unused for now
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  results TestCaseResult[]
+
+  @@index([userId, createdAt])
+  @@index([userId, problemId])
+}
+
+// Deliberately has no input/expectedOutput/actualOutput fields — only
+// pass/fail + index + resource usage, so this table structurally cannot
+// leak hidden test case content regardless of who queries it.
+model TestCaseResult {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testCaseId   String
+  testCase     TestCase   @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+  orderIndex   Int
+  verdict      Verdict
+  runtimeMs    Int?
+  memoryKb     Int?
+
+  @@index([submissionId])
 }

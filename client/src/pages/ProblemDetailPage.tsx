@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { LANGUAGES, type Language, type PublicProblemDetail } from "@online-judge/shared";
@@ -9,6 +9,9 @@ import DifficultyBadge from "../components/problems/DifficultyBadge";
 import CodeEditor from "../components/editor/CodeEditor";
 import { LANGUAGE_LABELS, LANGUAGE_STUBS } from "../lib/languageStubs";
 import { useRunJob } from "../hooks/useRunJob";
+import { useSubmission } from "../hooks/useSubmission";
+import VerdictBadge from "../components/submissions/VerdictBadge";
+import TestCaseResultChip from "../components/submissions/TestCaseResultChip";
 
 export default function ProblemDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -110,16 +113,22 @@ const PANEL_CLASS =
 function Playground({ language, problem }: { language: Language; problem: PublicProblemDetail }) {
   const [code, setCode] = useState(LANGUAGE_STUBS[language]);
   const [stdin, setStdin] = useState("");
-  const { submit, isSubmitting, jobStatus, isRunning } = useRunJob();
+  const { submit: submitRun, isSubmitting: isSubmittingRun, jobStatus, isRunning } = useRunJob();
+  const { submit: submitCode, isSubmitting: isSubmittingCode, submission, isJudging } =
+    useSubmission(problem.id);
 
   function handleRun() {
-    submit({
+    submitRun({
       language,
       code,
       stdin,
       timeLimitMs: problem.timeLimitMs,
       memoryLimitKb: problem.memoryLimitKb,
     });
+  }
+
+  function handleSubmit() {
+    submitCode({ language, code });
   }
 
   const result = jobStatus?.status === "completed" ? jobStatus.result : undefined;
@@ -155,19 +164,47 @@ function Playground({ language, problem }: { language: Language; problem: Public
       <div className="mt-3 flex items-center gap-2">
         <button
           onClick={handleRun}
-          disabled={isSubmitting || isRunning}
+          disabled={isSubmittingRun || isRunning || isSubmittingCode || isJudging}
           className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
         >
           {isRunning ? "Running..." : "Run"}
         </button>
         <button
-          disabled
-          title="Coming in a later milestone"
-          className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-500 dark:bg-slate-700"
+          onClick={handleSubmit}
+          disabled={isSubmittingRun || isRunning || isSubmittingCode || isJudging}
+          className="rounded bg-green-700 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-green-600"
         >
-          Submit
+          {isJudging ? "Judging..." : "Submit"}
         </button>
       </div>
+
+      {submission && (
+        <div className="mt-4 rounded border border-slate-200 p-3 dark:border-slate-700">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <VerdictBadge verdict={submission.verdict} />
+              <span className="text-xs text-slate-500">
+                {submission.passedCount}/{submission.totalCount} test cases passed
+              </span>
+            </div>
+            <Link to={`/submissions/${submission.id}`} className="text-xs underline">
+              View details
+            </Link>
+          </div>
+          {submission.results.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {submission.results.map((r) => (
+                <TestCaseResultChip key={r.orderIndex} result={r} />
+              ))}
+            </div>
+          )}
+          {submission.errorMessage && (
+            <pre className="mt-2 overflow-auto rounded bg-slate-100 p-2 text-xs whitespace-pre-wrap dark:bg-slate-800">
+              {submission.errorMessage}
+            </pre>
+          )}
+        </div>
+      )}
     </div>
   );
 }
