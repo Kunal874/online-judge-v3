@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { LANGUAGES, type Language } from "@online-judge/shared";
+import { LANGUAGES, type Language, type PublicProblemDetail } from "@online-judge/shared";
 import { fetchProblemBySlug } from "../api/problems";
 import DifficultyBadge from "../components/problems/DifficultyBadge";
 import CodeEditor from "../components/editor/CodeEditor";
 import { LANGUAGE_LABELS, LANGUAGE_STUBS } from "../lib/languageStubs";
+import { useRunJob } from "../hooks/useRunJob";
 
 export default function ProblemDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -95,35 +96,102 @@ export default function ProblemDetailPage() {
           </select>
         </div>
 
-        <Playground key={language} language={language} />
-
-        <div className="mt-3 flex gap-2">
-          <button
-            disabled
-            title="Coming in a later milestone"
-            className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-500 dark:bg-slate-700"
-          >
-            Run
-          </button>
-          <button
-            disabled
-            title="Coming in a later milestone"
-            className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-500 dark:bg-slate-700"
-          >
-            Submit
-          </button>
-          <span className="self-center text-xs text-slate-400">
-            Execution is wired up in an upcoming milestone.
-          </span>
-        </div>
+        <Playground key={language} language={language} problem={problem} />
       </div>
     </main>
   );
 }
 
+const PANEL_CLASS =
+  "min-h-24 w-full rounded border border-slate-300 bg-transparent p-2 text-xs font-mono dark:border-slate-600";
+
 // Keyed by language in the parent so switching languages remounts this
 // with a fresh stub instead of syncing state in an effect.
-function Playground({ language }: { language: Language }) {
+function Playground({ language, problem }: { language: Language; problem: PublicProblemDetail }) {
   const [code, setCode] = useState(LANGUAGE_STUBS[language]);
-  return <CodeEditor language={language} value={code} onChange={setCode} />;
+  const [stdin, setStdin] = useState("");
+  const { submit, isSubmitting, jobStatus, isRunning } = useRunJob();
+
+  const implemented = language === "PYTHON";
+
+  function handleRun() {
+    submit({
+      language,
+      code,
+      stdin,
+      timeLimitMs: problem.timeLimitMs,
+      memoryLimitKb: problem.memoryLimitKb,
+    });
+  }
+
+  const result = jobStatus?.status === "completed" ? jobStatus.result : undefined;
+
+  return (
+    <div>
+      <CodeEditor language={language} value={code} onChange={setCode} />
+
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <div className="mb-1 text-xs text-slate-500">Custom Input</div>
+          <textarea
+            value={stdin}
+            onChange={(e) => setStdin(e.target.value)}
+            placeholder="stdin for your program"
+            className={PANEL_CLASS}
+          />
+        </div>
+        <div>
+          <div className="mb-1 text-xs text-slate-500">Output</div>
+          <pre className={`${PANEL_CLASS} overflow-auto whitespace-pre-wrap`}>
+            {isRunning
+              ? "Running..."
+              : jobStatus?.status === "failed"
+                ? (jobStatus.error ?? "Execution failed.")
+                : result
+                  ? formatResult(result)
+                  : ""}
+          </pre>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={handleRun}
+          disabled={!implemented || isSubmitting || isRunning}
+          title={implemented ? undefined : "Only Python is supported so far"}
+          className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+        >
+          {isRunning ? "Running..." : "Run"}
+        </button>
+        <button
+          disabled
+          title="Coming in a later milestone"
+          className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-500 dark:bg-slate-700"
+        >
+          Submit
+        </button>
+        {!implemented && (
+          <span className="self-center text-xs text-slate-400">
+            Only Python runs so far — the other languages land in a later milestone.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatResult(result: {
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+  oomKilled: boolean;
+  exitCode: number | null;
+}): string {
+  if (result.timedOut) return "Time Limit Exceeded";
+  if (result.oomKilled) return "Memory Limit Exceeded";
+  const parts: string[] = [];
+  if (result.stdout) parts.push(result.stdout);
+  if (result.stderr) parts.push(`--- stderr ---\n${result.stderr}`);
+  if (result.exitCode !== 0) parts.push(`(exited with code ${result.exitCode})`);
+  return parts.join("\n") || "(no output)";
 }

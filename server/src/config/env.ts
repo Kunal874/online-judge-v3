@@ -11,6 +11,8 @@ const envSchema = z.object({
   // Unset = platform-aware default (named pipe on Windows dev machines,
   // /var/run/docker.sock once the worker itself is containerized).
   DOCKER_SOCKET_PATH: z.string().optional(),
+  REDIS_URL: z.string().min(1, "REDIS_URL is required"),
+  WORKER_CONCURRENCY: z.coerce.number().int().min(1).default(2),
 });
 
 // Fail fast on boot if the environment is misconfigured, rather than
