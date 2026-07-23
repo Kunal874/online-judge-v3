@@ -8,6 +8,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   COOKIE_NAME: z.string().default("oj_token"),
+  // Unset = platform-aware default (named pipe on Windows dev machines,
+  // /var/run/docker.sock once the worker itself is containerized).
+  DOCKER_SOCKET_PATH: z.string().optional(),
 });
 
 // Fail fast on boot if the environment is misconfigured, rather than

@@ -16,4 +16,32 @@ Prerequisites: Node.js 22+, Docker Desktop, Git.
 npm install
 ```
 
-Setup instructions per package are added as each piece comes online (database in `server/prisma`, Docker sandbox images in `server/docker`, etc.) — see the project plan for the full milestone sequence.
+Copy `server/.env.example` to `server/.env` and fill in real values (see comments in the file).
+
+Start Postgres:
+
+```bash
+docker compose up -d postgres
+```
+
+Apply migrations and (optionally) seed sample problems:
+
+```bash
+npm run prisma:migrate -w server
+npm run seed -w server
+```
+
+Build the judge's sandbox image(s) — required before Run/Submit will work:
+
+```bash
+npm run docker:build -w server
+```
+
+Run the app:
+
+```bash
+npm run dev:api -w server    # or: npm run dev:api
+npm run dev:client -w client # or: npm run dev:client
+```
+
+Setup instructions are added as each piece comes online — see the project plan for the full milestone sequence.
