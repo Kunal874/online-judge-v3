@@ -10,6 +10,9 @@ const docker = new Docker({
 
 export interface RunContainerOptions {
   image: string;
+  // If set, run this first. Non-zero exit (or timeout) short-circuits with
+  // compileError set and the real command never runs.
+  compileCmd?: string[];
   cmd: string[];
   files: Record<string, string>;
   stdin?: string;
@@ -24,7 +27,16 @@ export interface RunContainerResult {
   timedOut: boolean;
   oomKilled: boolean;
   durationMs: number;
+  // Non-null means compilation failed and nothing else ran — every other
+  // field is a default/placeholder in that case, not a real observation.
+  compileError: string | null;
 }
+
+// Independent of the problem's own memory limit — compilers are memory-
+// hungry and shouldn't be constrained by the problem's runtime budget.
+const COMPILE_MEMORY_LIMIT_KB = 524_288; // 512MB
+const COMPILE_TIME_LIMIT_MS = 15_000;
+const COMPILE_STDERR_MAX_CHARS = 4000;
 
 // Caps how much stdout/stderr we ever hold in memory — a runaway program
 // shouldn't be able to exhaust server memory just because it hasn't hit
@@ -153,15 +165,85 @@ async function readFileInContainer(container: Docker.Container, path: string): P
   return result.stdout;
 }
 
+interface TimedCommandResult {
+  stdout: Buffer;
+  stderr: Buffer;
+  exitCode: number | null;
+  timedOut: boolean;
+}
+
+// Runs one command with its real stdout/stderr/exit code redirected to
+// files (see execAndCollect's comment for why), racing it against
+// timeLimitMs and killing the container if it fires. Shared by both the
+// compile phase and the real run phase — same redirect-then-read-back
+// pattern, just different commands/timeouts/stdin.
+async function runCommandWithTimeout(
+  container: Docker.Container,
+  cmd: string[],
+  stdin: string,
+  timeLimitMs: number,
+): Promise<TimedCommandResult> {
+  // "$@" (not a string-interpolated command) so cmd's own arguments are
+  // never reinterpreted as shell syntax.
+  const wrappedCmd = [
+    "sh",
+    "-c",
+    '"$@" > /workspace/.stdout 2> /workspace/.stderr; echo -n $? > /workspace/.exitcode',
+    "sh",
+    ...cmd,
+  ];
+  const runPromise = execAndCollect(container, wrappedCmd, { attachStdin: true, stdin });
+  let timeoutHandle!: NodeJS.Timeout;
+  const timeoutPromise = new Promise<"timeout">((resolve) => {
+    timeoutHandle = setTimeout(() => resolve("timeout"), timeLimitMs);
+  });
+
+  let timedOut = false;
+  try {
+    const raceResult = await Promise.race([runPromise, timeoutPromise]);
+    if (raceResult === "timeout") {
+      timedOut = true;
+      await container.kill().catch(() => {
+        // container may have exited in the gap between the race
+        // resolving and this kill() call — not an error worth surfacing
+      });
+    }
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+
+  if (timedOut) {
+    return { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0), exitCode: null, timedOut: true };
+  }
+
+  const stdout = await readFileInContainer(container, "/workspace/.stdout");
+  const stderr = await readFileInContainer(container, "/workspace/.stderr");
+  const exitCodeText = (await readFileInContainer(container, "/workspace/.exitcode"))
+    .toString("utf-8")
+    .trim();
+  const parsedExitCode = Number.parseInt(exitCodeText, 10);
+  return {
+    stdout,
+    stderr,
+    exitCode: Number.isNaN(parsedExitCode) ? null : parsedExitCode,
+    timedOut: false,
+  };
+}
+
 // Every sandboxed run: create (held open via a no-op main process) -> exec
 // in each source file via `cat` (not the Docker cp/putArchive API, which
 // Docker refuses outright for any ReadonlyRootfs container even when the
-// target path is itself a writable tmpfs) -> exec the real command, racing
-// it against the timeout -> inspect for OOM -> remove in finally no matter
-// what happened above.
+// target path is itself a writable tmpfs) -> optionally compile -> exec
+// the real command, racing it against the timeout -> inspect for OOM ->
+// remove in finally no matter what happened above.
 export async function runContainer(options: RunContainerOptions): Promise<RunContainerResult> {
-  const { image, cmd, files, stdin = "", timeLimitMs, memoryLimitKb } = options;
-  const memoryBytes = memoryLimitKb * 1024;
+  const { image, compileCmd, cmd, files, stdin = "", timeLimitMs, memoryLimitKb } = options;
+  const runMemoryBytes = memoryLimitKb * 1024;
+  // Start with the generous compile budget if there's a compile step —
+  // tightened to the problem's real limit after compilation succeeds, so
+  // the compiler itself is never constrained by a strict problem memory
+  // limit meant for the user's running program.
+  const initialMemoryBytes = compileCmd ? COMPILE_MEMORY_LIMIT_KB * 1024 : runMemoryBytes;
 
   const container = await docker.createContainer({
     Image: image,
@@ -171,18 +253,20 @@ export async function runContainer(options: RunContainerOptions): Promise<RunCon
     Tty: false,
     NetworkDisabled: true,
     HostConfig: {
-      Memory: memoryBytes,
+      Memory: initialMemoryBytes,
       // Docker defaults MemorySwap to 2x Memory if left unset, which would
       // silently let a process swap instead of actually hitting the limit.
-      MemorySwap: memoryBytes,
+      MemorySwap: initialMemoryBytes,
       NanoCpus: 1_000_000_000, // 1 CPU
       PidsLimit: 64, // fork-bomb defense
       NetworkMode: "none",
       ReadonlyRootfs: true,
-      // Deliberately nosuid but NOT noexec — the compiled binary (C/C++/Java
-      // runners, added later) must be executable from this scratch dir.
-      // mode=1777 so the non-root `judge` user can write here.
-      Tmpfs: { "/workspace": "rw,nosuid,mode=1777,size=64m" },
+      // Deliberately nosuid but explicitly `exec` (not the docker default
+      // for a HostConfig.Tmpfs mount, confirmed by testing — omitting it
+      // makes every file here non-executable regardless of its own
+      // permission bits) — a compiled binary must be executable from this
+      // scratch dir. mode=1777 so the non-root `judge` user can write here.
+      Tmpfs: { "/workspace": "rw,exec,nosuid,mode=1777,size=64m" },
       CapDrop: ["ALL"],
       SecurityOpt: ["no-new-privileges"],
       AutoRemove: false,
@@ -190,10 +274,6 @@ export async function runContainer(options: RunContainerOptions): Promise<RunCon
   });
 
   const startedAt = Date.now();
-  let timedOut = false;
-  let stdout: Buffer = Buffer.alloc(0);
-  let stderr: Buffer = Buffer.alloc(0);
-  let exitCode: number | null = null;
 
   try {
     await container.start();
@@ -202,60 +282,46 @@ export async function runContainer(options: RunContainerOptions): Promise<RunCon
       await writeFileInContainer(container, name, content);
     }
 
-    // The real command's own stdout/stderr are redirected to files inside
-    // the container rather than captured live off the exec's attach
-    // stream — on this transport, live capture of a fast-exiting process's
-    // output has proven to occasionally lose data (see execAndCollect).
-    // A shell redirect is flushed by the time the process exits, so
-    // reading the files back afterward (via the same reliable no-stdin
-    // exec pattern used for writing files) is authoritative. "$@" (not a
-    // string-interpolated command) so cmd's own arguments are never
-    // reinterpreted as shell syntax.
-    const wrappedCmd = [
-      "sh",
-      "-c",
-      '"$@" > /workspace/.stdout 2> /workspace/.stderr; echo -n $? > /workspace/.exitcode',
-      "sh",
-      ...cmd,
-    ];
-    const runPromise = execAndCollect(container, wrappedCmd, { attachStdin: true, stdin });
-    let timeoutHandle!: NodeJS.Timeout;
-    const timeoutPromise = new Promise<"timeout">((resolve) => {
-      timeoutHandle = setTimeout(() => resolve("timeout"), timeLimitMs);
-    });
-
-    try {
-      const raceResult = await Promise.race([runPromise, timeoutPromise]);
-      if (raceResult === "timeout") {
-        timedOut = true;
-        await container.kill().catch(() => {
-          // container may have exited in the gap between the race
-          // resolving and this kill() call — not an error worth surfacing
-        });
+    if (compileCmd) {
+      const compileResult = await runCommandWithTimeout(container, compileCmd, "", COMPILE_TIME_LIMIT_MS);
+      if (compileResult.timedOut) {
+        return {
+          stdout: "",
+          stderr: "",
+          exitCode: null,
+          timedOut: false,
+          oomKilled: false,
+          durationMs: Date.now() - startedAt,
+          compileError: "Compilation timed out.",
+        };
       }
-    } finally {
-      clearTimeout(timeoutHandle);
+      if (compileResult.exitCode !== 0) {
+        return {
+          stdout: "",
+          stderr: "",
+          exitCode: null,
+          timedOut: false,
+          oomKilled: false,
+          durationMs: Date.now() - startedAt,
+          compileError: compileResult.stderr.toString("utf-8").slice(0, COMPILE_STDERR_MAX_CHARS),
+        };
+      }
+      // Compilation succeeded — now apply the problem's real memory limit
+      // before running untrusted code against real input.
+      await container.update({ Memory: runMemoryBytes, MemorySwap: runMemoryBytes });
     }
 
-    if (!timedOut) {
-      stdout = await readFileInContainer(container, "/workspace/.stdout");
-      stderr = await readFileInContainer(container, "/workspace/.stderr");
-      const exitCodeText = (await readFileInContainer(container, "/workspace/.exitcode"))
-        .toString("utf-8")
-        .trim();
-      const parsedExitCode = Number.parseInt(exitCodeText, 10);
-      exitCode = Number.isNaN(parsedExitCode) ? null : parsedExitCode;
-    }
-
+    const runResult = await runCommandWithTimeout(container, cmd, stdin, timeLimitMs);
     const inspectResult = await container.inspect();
 
     return {
-      stdout: stdout.toString("utf-8"),
-      stderr: stderr.toString("utf-8"),
-      exitCode,
-      timedOut,
+      stdout: runResult.stdout.toString("utf-8"),
+      stderr: runResult.stderr.toString("utf-8"),
+      exitCode: runResult.exitCode,
+      timedOut: runResult.timedOut,
       oomKilled: inspectResult.State.OOMKilled,
       durationMs: Date.now() - startedAt,
+      compileError: null,
     };
   } finally {
     await container.remove({ force: true }).catch(() => {});

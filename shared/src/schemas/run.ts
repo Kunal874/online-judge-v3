@@ -17,6 +17,7 @@ export const runResultSchema = z.object({
   timedOut: z.boolean(),
   oomKilled: z.boolean(),
   durationMs: z.number(),
+  compileError: z.string().nullable(),
 });
 export type RunResult = z.infer<typeof runResultSchema>;
 

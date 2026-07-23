@@ -12,7 +12,7 @@
     "prisma:generate": "prisma generate",
     "seed": "tsx prisma/seed.ts",
     "test": "vitest run",
-    "docker:build": "docker build -t online-judge-python:latest -f docker/python.Dockerfile docker"
+    "docker:build": "docker build -t online-judge-python:latest -f docker/python.Dockerfile docker && docker build -t online-judge-gcc:latest -f docker/gcc.Dockerfile docker && docker build -t online-judge-java:latest -f docker/java.Dockerfile docker"
   },
   "dependencies": {
     "@online-judge/shared": "*",

@@ -112,8 +112,6 @@ function Playground({ language, problem }: { language: Language; problem: Public
   const [stdin, setStdin] = useState("");
   const { submit, isSubmitting, jobStatus, isRunning } = useRunJob();
 
-  const implemented = language === "PYTHON";
-
   function handleRun() {
     submit({
       language,
@@ -157,8 +155,7 @@ function Playground({ language, problem }: { language: Language; problem: Public
       <div className="mt-3 flex items-center gap-2">
         <button
           onClick={handleRun}
-          disabled={!implemented || isSubmitting || isRunning}
-          title={implemented ? undefined : "Only Python is supported so far"}
+          disabled={isSubmitting || isRunning}
           className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
         >
           {isRunning ? "Running..." : "Run"}
@@ -170,11 +167,6 @@ function Playground({ language, problem }: { language: Language; problem: Public
         >
           Submit
         </button>
-        {!implemented && (
-          <span className="self-center text-xs text-slate-400">
-            Only Python runs so far — the other languages land in a later milestone.
-          </span>
-        )}
       </div>
     </div>
   );
@@ -186,7 +178,9 @@ function formatResult(result: {
   timedOut: boolean;
   oomKilled: boolean;
   exitCode: number | null;
+  compileError: string | null;
 }): string {
+  if (result.compileError !== null) return `Compile Error\n\n${result.compileError}`;
   if (result.timedOut) return "Time Limit Exceeded";
   if (result.oomKilled) return "Memory Limit Exceeded";
   const parts: string[] = [];
