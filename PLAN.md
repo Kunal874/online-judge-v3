@@ -109,28 +109,28 @@ when no SMTP env vars are set.
 
 ## Forward plan
 
-### M13 — Test coverage
-The gap: 10 unit tests covering one pure function, and nothing else.
-Every security boundary (who may read a submission, who may see an
-unpublished problem, whether hidden test data leaks) was verified by hand
-once and is currently unprotected against regression.
+### M13 — Test coverage ✅
+Was: 10 unit tests over one pure function. Now 104, with the security
+boundaries covered first — hidden test data never leaking, owner-or-admin
+submission access, `?userId=` honored for admins only, unpublished
+problems 404ing, identity coming from the cookie rather than the body.
 
-- Integration test harness against a real throwaway Postgres schema
-- Auth: registration, login, session, rate limiting, token single-use
-- Authorization: the owner-or-admin and published-only boundaries
-- Leak protection: assert hidden test case content never appears in any
-  public or submission response
-- Judge: verdict selection and compare edge cases
+Runs against a real Postgres (these rules live in Prisma queries, so a
+mock would prove nothing), on its own database, truncating between cases
+with the table list discovered from `pg_tables` so a new model can't
+silently start leaking rows between tests.
 
-### M14 — Contests
-`Problem.contestId` and `Submission.contestId` already exist in the
-schema, reserved since M4/M10 for exactly this.
+### M14 — Contests ✅
+`Submission.contestId` became a real relation. `Problem.contestId` was
+dropped in favour of a `ContestProblem` join table — a problem can be
+reused across contests and the public pool, and label/points/order
+describe the pairing rather than the problem.
 
-- `Contest` model: window (start/end), visibility, problem set
-- Registration, and enforcement that submissions only count inside the
-  window
-- Scoring + live leaderboard (solve count, then penalty time)
-- Admin contest CRUD; frontend list/detail/leaderboard pages
+Visibility is the security-relevant part: an upcoming contest's problem
+set is withheld entirely (null, not empty), a running contest's problems
+need registration, and everything opens up once it ends. ICPC scoring —
+solve count, then penalty (solve minute + 20 per prior rejection), with
+unsolved problems costing nothing.
 
 ### M15 — Production deployment
 - Multi-stage production Dockerfiles for api, worker, and client

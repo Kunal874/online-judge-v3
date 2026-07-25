@@ -8,10 +8,16 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 import ProblemListPage from "./pages/ProblemListPage";
 import ProblemDetailPage from "./pages/ProblemDetailPage";
+import ContestListPage from "./pages/ContestListPage";
+import ContestDetailPage from "./pages/ContestDetailPage";
+import ContestProblemPage from "./pages/ContestProblemPage";
+import ContestLeaderboardPage from "./pages/ContestLeaderboardPage";
 import SubmissionsPage from "./pages/SubmissionsPage";
 import SubmissionDetailPage from "./pages/SubmissionDetailPage";
 import AdminProblemsPage from "./pages/admin/AdminProblemsPage";
 import AdminProblemFormPage from "./pages/admin/AdminProblemFormPage";
+import AdminContestsPage from "./pages/admin/AdminContestsPage";
+import AdminContestFormPage from "./pages/admin/AdminContestFormPage";
 import Navbar from "./components/layout/Navbar";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 
@@ -28,6 +34,10 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/problems" element={<ProblemListPage />} />
         <Route path="/problems/:slug" element={<ProblemDetailPage />} />
+        <Route path="/contests" element={<ContestListPage />} />
+        <Route path="/contests/:slug" element={<ContestDetailPage />} />
+        <Route path="/contests/:slug/leaderboard" element={<ContestLeaderboardPage />} />
+        <Route path="/contests/:slug/problems/:label" element={<ContestProblemPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/submissions" element={<SubmissionsPage />} />
@@ -37,6 +47,9 @@ export default function App() {
           <Route path="/admin/problems" element={<AdminProblemsPage />} />
           <Route path="/admin/problems/new" element={<AdminProblemFormPage />} />
           <Route path="/admin/problems/:id/edit" element={<AdminProblemFormPage />} />
+          <Route path="/admin/contests" element={<AdminContestsPage />} />
+          <Route path="/admin/contests/new" element={<AdminContestFormPage />} />
+          <Route path="/admin/contests/:id/edit" element={<AdminContestFormPage />} />
         </Route>
       </Routes>
     </>

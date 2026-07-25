@@ -21,10 +21,18 @@ export default function Navbar() {
         <Link to="/problems" className="text-sm">
           Problems
         </Link>
+        <Link to="/contests" className="text-sm">
+          Contests
+        </Link>
         {user?.role === "ADMIN" && (
-          <Link to="/admin/problems" className="text-sm">
-            Admin
-          </Link>
+          <>
+            <Link to="/admin/problems" className="text-sm">
+              Admin
+            </Link>
+            <Link to="/admin/contests" className="text-sm">
+              Contests admin
+            </Link>
+          </>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-4 text-sm">

@@ -1,5 +1,6 @@
 import { prisma } from "../../db/prisma.js";
 import { submitQueue } from "../../queue/queues.js";
+import { assertCanSubmitToContest } from "./contest.service.js";
 import { NotFoundError, ForbiddenError } from "../../lib/errors.js";
 import type { CreateSubmissionInput, SubmissionListQuery } from "@online-judge/shared";
 import type { Role } from "../../generated/prisma/enums.js";
@@ -43,11 +44,25 @@ export async function createSubmission(
   problemId: string,
   input: CreateSubmissionInput,
 ) {
-  const problem = await prisma.problem.findFirst({ where: { id: problemId, isPublished: true } });
-  if (!problem) throw new NotFoundError("Problem not found");
+  // A contest problem is normally unpublished (its statement is served
+  // through the contest routes instead), so the published check only
+  // applies outside a contest.
+  if (input.contestId) {
+    await assertCanSubmitToContest(input.contestId, problemId, userId);
+  } else {
+    const problem = await prisma.problem.findFirst({ where: { id: problemId, isPublished: true } });
+    if (!problem) throw new NotFoundError("Problem not found");
+  }
 
   const submission = await prisma.submission.create({
-    data: { userId, problemId, language: input.language, code: input.code, verdict: "PENDING" },
+    data: {
+      userId,
+      problemId,
+      language: input.language,
+      code: input.code,
+      verdict: "PENDING",
+      contestId: input.contestId ?? null,
+    },
   });
 
   await submitQueue.add("submit", { submissionId: submission.id });

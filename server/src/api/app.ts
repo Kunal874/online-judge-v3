@@ -8,6 +8,8 @@ import { logger } from "../lib/logger.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { problemRouter } from "./routes/problem.routes.js";
 import { adminProblemRouter } from "./routes/admin/problem.routes.js";
+import { contestRouter } from "./routes/contest.routes.js";
+import { adminContestRouter } from "./routes/admin/contest.routes.js";
 import { runRouter } from "./routes/run.routes.js";
 import { submissionRouter } from "./routes/submission.routes.js";
 import { userRouter } from "./routes/user.routes.js";
@@ -31,6 +33,8 @@ export function createApp() {
   app.use("/auth", authRouter);
   app.use("/problems", problemRouter);
   app.use("/admin/problems", adminProblemRouter);
+  app.use("/contests", contestRouter);
+  app.use("/admin/contests", adminContestRouter);
   app.use("/run", runRouter);
   app.use("/submissions", submissionRouter);
   app.use("/users", userRouter);

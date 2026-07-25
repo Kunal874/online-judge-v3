@@ -4,6 +4,10 @@ import { LANGUAGES, VERDICTS } from "../types/index.js";
 export const createSubmissionSchema = z.object({
   language: z.enum(LANGUAGES),
   code: z.string().min(1).max(100_000),
+  // Opt-in: present means "count this toward that contest". The server
+  // re-checks the contest is running, that the caller registered, and that
+  // the problem is actually in it — passing an id here grants nothing.
+  contestId: z.string().trim().min(1).optional(),
 });
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 

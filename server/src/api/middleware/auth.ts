@@ -19,6 +19,23 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   }
 }
 
+// For endpoints that are public but answer differently when signed in —
+// e.g. a contest listing that also reports whether you're registered.
+// An absent or invalid cookie leaves req.user undefined rather than
+// erroring, so a stale session degrades to the anonymous view.
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = req.cookies?.[env.COOKIE_NAME];
+  if (token) {
+    try {
+      const payload = verifyAuthToken(token);
+      req.user = { id: payload.sub, role: payload.role };
+    } catch {
+      // Intentionally ignored — see above.
+    }
+  }
+  next();
+}
+
 export function requireRole(...roles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) throw new UnauthorizedError();

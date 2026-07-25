@@ -1,6 +1,5 @@
 // Prisma schema — grows incrementally as each milestone needs new models.
-// See the project plan for the full intended shape (Problem/TestCase/Submission
-// land in later milestones).
+// See PLAN.md for the milestone sequence.
 
 generator client {
   provider = "prisma-client"
@@ -34,7 +33,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  submissions Submission[]
+  submissions   Submission[]
+  registrations ContestRegistration[]
 
   @@index([email])
 }
@@ -56,13 +56,13 @@ model Problem {
   timeLimitMs   Int        @default(2000)
   memoryLimitKb Int        @default(262144)
   isPublished   Boolean    @default(false)
-  contestId     String? // reserved for a future Contest relation, unused for now
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  testCases   TestCase[]
-  submissions Submission[]
+  testCases       TestCase[]
+  submissions     Submission[]
+  contestProblems ContestProblem[]
 
   @@index([difficulty])
   @@index([tags], type: Gin)
@@ -122,7 +122,12 @@ model Submission {
   memoryKb     Int? // max across test cases
   passedCount  Int  @default(0)
   totalCount   Int  @default(0)
-  contestId    String? // reserved for a future Contest relation, unused for now
+
+  // Set only when the submission was made inside a running contest the user
+  // had registered for — the API refuses to set it otherwise. Nulled rather
+  // than deleted if the contest is removed, so a user keeps their history.
+  contestId String?
+  contest   Contest? @relation(fields: [contestId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -131,6 +136,7 @@ model Submission {
 
   @@index([userId, createdAt])
   @@index([userId, problemId])
+  @@index([contestId, createdAt])
 }
 
 // Deliberately has no input/expectedOutput/actualOutput fields — only
@@ -148,4 +154,60 @@ model TestCaseResult {
   memoryKb     Int?
 
   @@index([submissionId])
+}
+
+model Contest {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   @default("")
+  startsAt    DateTime
+  endsAt      DateTime
+  isPublished Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  problems      ContestProblem[]
+  registrations ContestRegistration[]
+  submissions   Submission[]
+
+  @@index([startsAt])
+}
+
+// A join table rather than a contestId on Problem: the same problem can be
+// reused across contests and also live in the public pool, and the
+// contest-specific bits (display label, point value, ordering within the
+// set) describe the pairing, not the problem itself.
+model ContestProblem {
+  id         String  @id @default(cuid())
+  contestId  String
+  contest    Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problemId  String
+  problem    Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  // "A", "B", "C" — how the problem is referred to during the contest.
+  label      String
+  points     Int     @default(100)
+  orderIndex Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  // A problem appears at most once per contest, and labels are unique
+  // within a contest — both enforced in the database rather than only in
+  // application code, since a duplicate would corrupt the leaderboard.
+  @@unique([contestId, problemId])
+  @@unique([contestId, label])
+  @@index([contestId])
+}
+
+model ContestRegistration {
+  id           String   @id @default(cuid())
+  contestId    String
+  contest      Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registeredAt DateTime @default(now())
+
+  @@unique([contestId, userId])
+  @@index([contestId])
 }

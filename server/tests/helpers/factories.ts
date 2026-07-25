@@ -62,6 +62,84 @@ export async function createProblem(
   });
 }
 
+const MINUTE_MS = 60_000;
+
+// Windows are expressed relative to now so a test can say "running" or
+// "already finished" without freezing the clock.
+export async function createContest(
+  overrides: {
+    isPublished?: boolean;
+    slug?: string;
+    title?: string;
+    startsAt?: Date;
+    endsAt?: Date;
+    /** Shorthand for a sensible window; ignored if startsAt/endsAt given. */
+    when?: "upcoming" | "running" | "ended";
+  } = {},
+) {
+  const slug = overrides.slug ?? unique("contest-");
+  const now = Date.now();
+  const windows = {
+    upcoming: [now + 60 * MINUTE_MS, now + 120 * MINUTE_MS],
+    running: [now - 30 * MINUTE_MS, now + 30 * MINUTE_MS],
+    ended: [now - 120 * MINUTE_MS, now - 60 * MINUTE_MS],
+  } as const;
+  const [defaultStart, defaultEnd] = windows[overrides.when ?? "running"];
+
+  return prisma.contest.create({
+    data: {
+      slug,
+      title: overrides.title ?? `Contest ${slug}`,
+      description: "A test contest.",
+      startsAt: overrides.startsAt ?? new Date(defaultStart),
+      endsAt: overrides.endsAt ?? new Date(defaultEnd),
+      isPublished: overrides.isPublished ?? true,
+    },
+  });
+}
+
+export async function addProblemToContest(
+  contestId: string,
+  problemId: string,
+  overrides: { label?: string; points?: number; orderIndex?: number } = {},
+) {
+  return prisma.contestProblem.create({
+    data: {
+      contestId,
+      problemId,
+      label: overrides.label ?? "A",
+      points: overrides.points ?? 100,
+      orderIndex: overrides.orderIndex ?? 0,
+    },
+  });
+}
+
+export async function registerFor(contestId: string, userId: string) {
+  return prisma.contestRegistration.create({ data: { contestId, userId } });
+}
+
+// Contest submissions are normally created through the API, but leaderboard
+// tests need precise timestamps and verdicts, which only direct writes give.
+export async function createContestSubmission(
+  contestId: string,
+  userId: string,
+  problemId: string,
+  verdict: "ACCEPTED" | "WRONG_ANSWER" | "PENDING" | "RUNTIME_ERROR",
+  createdAt: Date,
+) {
+  return prisma.submission.create({
+    data: {
+      userId,
+      problemId,
+      contestId,
+      language: "PYTHON",
+      code: "print(3)",
+      verdict,
+      createdAt,
+    },
+  });
+}
+
 export async function createTestCase(
   problemId: string,
   overrides: { isHidden?: boolean; input?: string; expectedOutput?: string; orderIndex?: number } = {},
