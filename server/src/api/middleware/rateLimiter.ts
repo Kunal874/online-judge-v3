@@ -1,7 +1,15 @@
-import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import rateLimit, { ipKeyGenerator, MemoryStore } from "express-rate-limit";
+
+// Held explicitly (rather than left implicit inside each limiter) so the
+// test suite can clear counters between cases — every test request comes
+// from the same IP, so otherwise the shared window fills up partway through
+// a run and later tests assert against 429s instead of the real behavior.
+const authStore = new MemoryStore();
+const judgeStore = new MemoryStore();
 
 // Tight limit on auth endpoints to slow down brute-forcing / registration abuse.
 export const authLimiter = rateLimit({
+  store: authStore,
   windowMs: 15 * 60 * 1000,
   limit: 10,
   standardHeaders: true,
@@ -13,6 +21,7 @@ export const authLimiter = rateLimit({
 // Keyed by user id (this only ever runs after requireAuth), not IP, so it
 // can't be dodged by switching networks and doesn't over-block shared IPs.
 export const judgeLimiter = rateLimit({
+  store: judgeStore,
   windowMs: 5 * 60 * 1000,
   limit: 20,
   standardHeaders: true,
@@ -24,3 +33,9 @@ export const judgeLimiter = rateLimit({
   keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip ?? "unknown"),
   message: { error: "Too many run/submit requests. Please slow down." },
 });
+
+// Test-only hook; see the comment on the stores above.
+export function resetRateLimiters(): void {
+  authStore.resetAll();
+  judgeStore.resetAll();
+}
