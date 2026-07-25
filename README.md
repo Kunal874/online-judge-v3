@@ -44,4 +44,11 @@ npm run dev:api -w server    # or: npm run dev:api
 npm run dev:client -w client # or: npm run dev:client
 ```
 
-Setup instructions are added as each piece comes online — see the project plan for the full milestone sequence.
+Run the judging worker (needed for Run/Submit to produce verdicts):
+
+```bash
+npm run dev:worker -w server
+```
+
+See [PLAN.md](PLAN.md) for the full milestone sequence and the design
+decisions behind the sandbox.
