@@ -1,0 +1,113 @@
+# Production topology. Values come from a .env file next to this one — see
+# DEPLOYMENT.md. Nothing here has a default secret on purpose: a compose
+# file that boots with a working default password is a compose file that
+# ships one to production.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Deliberately no ports: — reachable only from the compose network.
+    # Exposing Postgres to the host is the single most common way these
+    # deployments get breached.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    command: ["node", "server/dist/worker/index.js"]
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+      DOCKER_SOCKET_PATH: /var/run/docker.sock
+    volumes:
+      # READ THIS BEFORE DEPLOYING. The worker spawns sandbox containers, so
+      # it needs the Docker daemon. Access to this socket is equivalent to
+      # root on the host: anything that compromises the worker process can
+      # start a privileged container and escape. The sandbox protects the
+      # host from submitted *code*; it does not protect the host from the
+      # worker itself.
+      #
+      # Run the worker on a machine that does nothing else, or put a
+      # socket proxy in front of it restricted to container create/start/
+      # inspect/remove. See DEPLOYMENT.md.
+      - /var/run/docker.sock:/var/run/docker.sock
+    # The image runs as the non-root `node` user, which cannot read a
+    # root:docker-owned socket by default. This adds the host's docker group
+    # so it can, without running the process as root.
+    #   DOCKER_GID=$(getent group docker | cut -d: -f3)
+    group_add:
+      - "${DOCKER_GID:?set DOCKER_GID — see DEPLOYMENT.md}"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      args:
+        # Empty = same-origin /api, proxied by nginx to the api service.
+        VITE_API_URL: ""
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

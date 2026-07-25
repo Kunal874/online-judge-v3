@@ -132,10 +132,37 @@ need registration, and everything opens up once it ends. ICPC scoring —
 solve count, then penalty (solve minute + 20 per prior rejection), with
 unsolved problems costing nothing.
 
-### M15 — Production deployment
-- Multi-stage production Dockerfiles for api, worker, and client
-- Production compose/orchestration config, non-dev secrets handling
-- Real SMTP (currently a straight env-var swap away)
-- Security review pass: cookie `sameSite` for the chosen deploy topology,
-  CSP, secret rotation
-- Deployment + operations documentation
+### M15 — Production deployment ✅
+Multi-stage images for the server (one image, two entrypoints — API and
+worker) and the client (nginx serving the built SPA and proxying `/api`
+to the API on the same origin). Both run as non-root. `docker-compose.
+prod.yml` has no default secrets: it fails to start rather than booting
+with a working default password.
+
+Serving the API same-origin is what let the session cookie move from
+`SameSite=None` to `Lax`, so the cookie is a real CSRF defense again.
+`COOKIE_SAMESITE`/`COOKIE_SECURE` are now explicit config, and the server
+refuses to start on `none` without secure cookies (a combination browsers
+reject silently). `clearCookie` now mirrors the cookie's attributes —
+without that, logout returned 204 while leaving the session in place.
+
+Both processes handle `SIGTERM`. Operations, backups, scaling, and the
+worker's Docker-socket trust boundary are documented in
+[DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Known gaps
+
+Worth being honest about what isn't done:
+
+- **Peak memory is never measured.** `TestCaseResult.memoryKb` is always
+  null. MLE enforcement doesn't depend on it (that's the kernel OOM kill),
+  but the UI can't show memory used.
+- **Compiled languages recompile per test case.** Correct, but wasteful —
+  a submission with 20 tests compiles 20 times.
+- **No public profile pages.** `GET /users/:handle/profile` is public and
+  returns everything needed, but only the signed-in user's own profile has
+  a page, so leaderboard handles aren't links.
+- **No editorial/solutions, no discussion.**
+- **The judge trusts problem authors.** An admin adding a test case with
+  enormous expected output can exhaust worker memory; output is capped per
+  run but not per problem.

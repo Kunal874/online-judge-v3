@@ -8,6 +8,17 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   COOKIE_NAME: z.string().default("oj_token"),
+  // "lax" is the safe default and works whenever the frontend and API share
+  // an origin (the recommended deployment — see DEPLOYMENT.md). "none" is
+  // only for a genuinely cross-site split, and gives up SameSite as a CSRF
+  // defense, so it must be chosen deliberately rather than inferred.
+  COOKIE_SAMESITE: z.enum(["lax", "strict", "none"]).default("lax"),
+  // Unset = secure cookies in production, plain in dev (where there's no
+  // TLS and a secure cookie would simply never be stored).
+  COOKIE_SECURE: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value === "true")),
   // Unset = platform-aware default (named pipe on Windows dev machines,
   // /var/run/docker.sock once the worker itself is containerized).
   DOCKER_SOCKET_PATH: z.string().optional(),
@@ -29,4 +40,13 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+const cookieSecure = parsed.data.COOKIE_SECURE ?? parsed.data.NODE_ENV === "production";
+
+// Browsers reject SameSite=None on a non-secure cookie outright, so this
+// combination would silently log everyone out rather than fail loudly.
+if (parsed.data.COOKIE_SAMESITE === "none" && !cookieSecure) {
+  console.error("Invalid environment configuration: COOKIE_SAMESITE=none requires secure cookies.");
+  process.exit(1);
+}
+
+export const env = { ...parsed.data, COOKIE_SECURE: cookieSecure };

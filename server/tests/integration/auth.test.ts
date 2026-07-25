@@ -38,6 +38,17 @@ describe("POST /auth/register", () => {
     expect(authCookieHeader).toMatch(/HttpOnly/i);
   });
 
+  // Lax (not None) is what makes the cookie itself a CSRF defense; it works
+  // because the API is served on the app's own origin in production.
+  it("issues the session cookie as SameSite=Lax", async () => {
+    const res = await request(app).post("/auth/register").send(VALID_REGISTRATION);
+
+    const cookies = res.headers["set-cookie"] as unknown as string[];
+    const authCookieHeader = cookies.find((c) => c.startsWith("oj_token="))!;
+    expect(authCookieHeader).toMatch(/SameSite=Lax/i);
+    expect(authCookieHeader).not.toMatch(/SameSite=None/i);
+  });
+
   it("never assigns ADMIN even if the client asks for it", async () => {
     await request(app)
       .post("/auth/register")
@@ -129,6 +140,21 @@ describe("GET /auth/me", () => {
     const res = await request(app).get("/auth/me").set("Cookie", `oj_token=${forged}`);
 
     expect(res.status).toBe(401);
+  });
+});
+
+describe("POST /auth/logout", () => {
+  // A browser only removes a cookie when the clearing response matches its
+  // attributes, so a mismatch here logs nobody out while still returning 204.
+  it("clears the cookie with matching attributes", async () => {
+    const res = await request(app).post("/auth/logout");
+
+    expect(res.status).toBe(204);
+    const cookies = res.headers["set-cookie"] as unknown as string[];
+    const cleared = cookies.find((c) => c.startsWith("oj_token="))!;
+    expect(cleared).toMatch(/oj_token=;/);
+    expect(cleared).toMatch(/HttpOnly/i);
+    expect(cleared).toMatch(/SameSite=Lax/i);
   });
 });
 

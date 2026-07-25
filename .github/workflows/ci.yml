@@ -43,3 +43,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # Typechecking alone wouldn't catch a broken bundle (an unbundleable
+      # import, a missing external), and that failure would otherwise only
+      # surface during a deploy.
+      - run: npm run build -w server
+      - run: npm run build -w client

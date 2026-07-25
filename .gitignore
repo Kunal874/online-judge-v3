@@ -3,7 +3,9 @@ dist/
 build/
 .env
 .env.*
+# Templates carry placeholders only, never real values.
 !.env.example
+!.env.production.example
 *.log
 coverage/
 .DS_Store

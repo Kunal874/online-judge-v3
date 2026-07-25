@@ -16,14 +16,18 @@ import type { UserModel as User } from "../../generated/prisma/models.js";
 
 const COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Shared by set and clear: a browser only removes a cookie when the
+// clearing response matches its attributes, so a logout that omitted these
+// would appear to succeed while leaving the session cookie in place.
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: env.COOKIE_SECURE,
+  sameSite: env.COOKIE_SAMESITE,
+} as const;
+
 function setAuthCookie(res: Response, user: User) {
   const token = signAuthToken({ sub: user.id, role: user.role });
-  res.cookie(env.COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: COOKIE_MAX_AGE_MS,
-  });
+  res.cookie(env.COOKIE_NAME, token, { ...COOKIE_OPTIONS, maxAge: COOKIE_MAX_AGE_MS });
 }
 
 export async function register(req: Request, res: Response) {
@@ -39,7 +43,7 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function logout(_req: Request, res: Response) {
-  res.clearCookie(env.COOKIE_NAME);
+  res.clearCookie(env.COOKIE_NAME, COOKIE_OPTIONS);
   res.status(204).send();
 }
 
