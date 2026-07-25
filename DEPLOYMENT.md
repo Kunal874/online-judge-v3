@@ -1,13 +1,15 @@
 # Deployment
 
-Production runs four services plus Postgres and Redis:
-
 | Service  | What it is                                  |
 | -------- | ------------------------------------------- |
+| `caddy`  | TLS termination; obtains and renews certificates automatically |
 | `web`    | nginx serving the built client, proxying `/api` |
 | `api`    | Express, no Docker access                   |
 | `worker` | pulls judging jobs, spawns sandbox containers |
 | `postgres` / `redis` | data and the job queue          |
+
+Only `caddy` is reachable from the internet (ports 80 and 443). Everything
+else talks over the internal compose network.
 
 `api` and `worker` are the **same image** with different entrypoints. The
 split matters: the API never executes untrusted code, so a fork bomb or a
@@ -55,8 +57,8 @@ POSTGRES_PASSWORD=<long random string>
 POSTGRES_DB=online_judge
 
 JWT_SECRET=<64+ random hex chars>
+SITE_ADDRESS=judge.example.com
 FRONTEND_URL=https://judge.example.com
-WEB_PORT=8080
 DOCKER_GID=<output of the command above>
 WORKER_CONCURRENCY=2
 
@@ -110,14 +112,24 @@ Until those exist, every submission fails.
 
 ---
 
-## 3. Put TLS in front
+## 3. HTTPS
 
-The `web` service listens on plain HTTP on `WEB_PORT`. Terminate TLS ahead
-of it with Caddy, nginx, or your cloud load balancer, and forward to that
-port.
+Handled by the `caddy` service — it requests a Let's Encrypt certificate on
+the first request and renews it automatically. Requirements:
 
-This is not optional. Session cookies are issued with `Secure`, so
-**without HTTPS the browser discards them and nobody can stay logged in.**
+- Ports 80 and 443 open to the internet
+- `SITE_ADDRESS` resolves to this server
+
+`SITE_ADDRESS` must be a **hostname, not an IP** — no public certificate
+authority issues certificates for bare IP addresses. Without a domain,
+`sslip.io` resolves any address for free: a server at `203.0.113.5`
+is reachable as `203-0-113-5.sslip.io`.
+
+HTTPS is not optional here. Session cookies are issued with `Secure`, so
+over plain HTTP the browser discards them and nobody can stay logged in.
+
+Already running your own reverse proxy? Delete the `caddy` service and
+publish `web`'s port 8080 instead.
 
 ---
 

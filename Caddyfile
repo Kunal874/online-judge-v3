@@ -1,0 +1,17 @@
+# Caddy fetches and renews a Let's Encrypt certificate for SITE_ADDRESS
+# automatically, on first request, with no manual certbot step. That needs
+# ports 80 and 443 reachable from the internet and SITE_ADDRESS actually
+# resolving to this host — which is why an IP address won't work here (a
+# public CA will not issue a certificate for a bare IP).
+{$SITE_ADDRESS} {
+	encode gzip
+
+	# nginx inside the web container serves the built app and proxies /api
+	# to the API, so everything stays on one origin and the session cookie
+	# can remain SameSite=Lax.
+	reverse_proxy web:8080
+
+	# Tells browsers to refuse plain HTTP for this host in future. Only
+	# meaningful once HTTPS is confirmed working; harmless before that.
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}

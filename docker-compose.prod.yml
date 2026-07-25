@@ -103,11 +103,32 @@ services:
         # Empty = same-origin /api, proxied by nginx to the api service.
         VITE_API_URL: ""
     restart: unless-stopped
-    ports:
-      - "${WEB_PORT:-8080}:8080"
+    # No host port: caddy is the only thing the internet talks to.
     depends_on:
       - api
+
+  # Terminates TLS and obtains/renews the certificate automatically. If you
+  # already run your own reverse proxy, delete this service and publish
+  # web's port 8080 instead.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS to the public hostname}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Issued certificates live here. Without this volume every restart
+      # re-requests them, which hits Let's Encrypt rate limits fast.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
 
 volumes:
   postgres_data:
   redis_data:
+  caddy_data:
+  caddy_config:
