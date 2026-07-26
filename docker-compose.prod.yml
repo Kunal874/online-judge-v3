@@ -45,6 +45,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      # caddy -> web(nginx) -> api. Both append to X-Forwarded-For, so the
+      # API is two hops behind the client. Change this if you change the
+      # topology: see the note in server/src/config/env.ts for why being
+      # wrong in either direction breaks rate limiting.
+      TRUST_PROXY_HOPS: 2
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

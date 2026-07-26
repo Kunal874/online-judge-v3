@@ -19,6 +19,17 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .optional()
     .transform((value) => (value === undefined ? undefined : value === "true")),
+  // Number of reverse proxies in front of the API, so Express can work out
+  // the real client IP from X-Forwarded-For. 0 (no proxy) is right for local
+  // dev; the production compose file runs caddy -> nginx -> api, so 2.
+  //
+  // This must match the real topology exactly. Too low and every request
+  // appears to come from the proxy, collapsing all IP-keyed rate limiting
+  // into a single shared bucket. Too high and a client can prepend a forged
+  // X-Forwarded-For entry to impersonate any address it likes, which is
+  // worse — it turns the rate limiter into something an attacker can walk
+  // straight past.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   // Unset = platform-aware default (named pipe on Windows dev machines,
   // /var/run/docker.sock once the worker itself is containerized).
   DOCKER_SOCKET_PATH: z.string().optional(),

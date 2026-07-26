@@ -18,6 +18,15 @@ import { errorHandler } from "./middleware/errorHandler.js";
 export function createApp() {
   const app = express();
 
+  // Left at Express's default (disabled) when there is no proxy. Enabling it
+  // unconditionally would let any client set X-Forwarded-For and choose its
+  // own apparent IP; leaving it off behind a real proxy makes every request
+  // look like it came from that proxy, so one IP-keyed rate-limit bucket is
+  // shared by every user on the site.
+  if (env.TRUST_PROXY_HOPS > 0) {
+    app.set("trust proxy", env.TRUST_PROXY_HOPS);
+  }
+
   app.use(helmet());
   app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
   // Generous enough for a max-size code + stdin submission (100k chars
