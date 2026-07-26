@@ -153,6 +153,47 @@ independent of the app build, so they can be pulled concurrently with it.
 
 ---
 
+## Shipping a change
+
+```bash
+# 1. edit code locally
+# 2. check it before it leaves your machine
+npm run lint && npm run typecheck && npm test
+# 3. commit — deploy.sh ships HEAD, not your working tree
+git add -A && git commit -m "what changed"
+# 4. ship it
+./deploy.sh
+```
+
+`deploy.sh` refuses to run against a dirty working tree, because
+`git archive` exports the last commit and uncommitted edits would be
+silently left behind — leaving you debugging a version that isn't running.
+It also stops before restarting if migrations fail, so a bad migration
+leaves the previous containers serving rather than taking the site down.
+
+Only the database survives a deploy. Everything else is rebuilt from the
+commit, so the server holds no state you would be sad to lose — except
+`.env`, which is untracked and therefore never overwritten by the extract.
+
+### Two things that make deploys look broken
+
+**nginx caching the API's address.** Fixed in `client/nginx.conf`, but
+worth knowing why: nginx resolves a hostname written directly into
+`proxy_pass` once at startup and caches it forever. Recreating the api
+container gives it a new address, and every request 502s until nginx is
+restarted too. The upstream now goes through a variable, which forces a
+DNS lookup per request. Verify a change here by recreating *only* the api
+container and confirming the site still answers.
+
+**Rebuild times.** 10-20 minutes on the 1 GB shape, mostly `npm ci`. Don't
+mistake it for a hang — `uptime` shows the load average falling back toward
+zero when it is genuinely finished. Checking with
+`pgrep -f "docker compose ... build"` does not work: the pattern appears in
+the checking command's own arguments, so it matches itself and reports a
+build that ended long ago as still running.
+
+---
+
 ## Verifying, and what "working" actually means
 
 A 200 on the homepage proves very little — the judge is the part with
