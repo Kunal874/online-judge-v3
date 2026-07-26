@@ -156,14 +156,26 @@ independent of the app build, so they can be pulled concurrently with it.
 ## Shipping a change
 
 ```bash
-# 1. edit code locally
-# 2. check it before it leaves your machine
+# 1. run it locally — starts postgres and redis, then api, worker and client
+npm run dev
+# 2. edit code; everything reloads on save
+# 3. check it before it leaves your machine
 npm run lint && npm run typecheck && npm test
-# 3. commit — deploy.sh ships HEAD, not your working tree
+# 4. commit — deploy.sh ships HEAD, not your working tree
 git add -A && git commit -m "what changed"
-# 4. ship it
+# 5. ship it
 ./deploy.sh
 ```
+
+`npm run dev` runs all three processes in one terminal, and `-k` means
+Ctrl+C stops all of them together — a stray api or worker left holding
+port 8000 makes the next `npm run dev` fail with `EADDRINUSE` and look
+like a code problem. If that happens anyway, find the holder with
+`Get-NetTCPConnection -State Listen -LocalPort 8000` (or `lsof -i :8000`)
+and kill it.
+
+The database keeps running after Ctrl+C, on purpose — it holds your data
+between sessions. `npm run db:down` stops it.
 
 `deploy.sh` refuses to run against a dirty working tree, because
 `git archive` exports the last commit and uncommitted edits would be

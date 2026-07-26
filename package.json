@@ -8,6 +8,9 @@
     "shared"
   ],
   "scripts": {
+    "dev": "npm run db:up && concurrently -n api,worker,client -c blue,magenta,green -k \"npm:dev:api\" \"npm:dev:worker\" \"npm:dev:client\"",
+    "db:up": "docker compose up -d --wait postgres redis",
+    "db:down": "docker compose down",
     "dev:client": "npm run dev -w client",
     "dev:api": "npm run dev -w server",
     "dev:worker": "npm run dev:worker -w server",
@@ -17,6 +20,7 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "concurrently": "^10.0.4",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
