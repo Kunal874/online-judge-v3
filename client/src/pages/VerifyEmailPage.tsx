@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { resendVerificationRequest, verifyEmailRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { useNextPath } from "../hooks/useNextPath";
@@ -8,7 +8,7 @@ import { apiErrorMessage, apiFieldErrors } from "../lib/apiError";
 const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function VerifyEmailPage() {
-  const { user, isLoading, refetchUser } = useAuth();
+  const { user, isLoading, refetchUser, logout } = useAuth();
   const navigate = useNavigate();
   const next = useNextPath();
 
@@ -113,9 +113,13 @@ export default function VerifyEmailPage() {
         >
           {cooldown > 0 ? `Resend in ${cooldown}s` : "Send a new code"}
         </button>
-        <Link to="/" className="text-slate-500 underline">
-          Do this later
-        </Link>
+        {/* Not a skip — every other route bounces back here while
+            unverified. This is only an escape hatch for a typo'd email
+            address, where no code could ever arrive and the account is a
+            dead end otherwise. */}
+        <button onClick={() => logout()} className="text-slate-500 underline">
+          Wrong email? Log out
+        </button>
       </div>
     </main>
   );

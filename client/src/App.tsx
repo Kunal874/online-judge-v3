@@ -20,36 +20,42 @@ import AdminContestsPage from "./pages/admin/AdminContestsPage";
 import AdminContestFormPage from "./pages/admin/AdminContestFormPage";
 import Navbar from "./components/layout/Navbar";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import RequireVerified from "./components/layout/RequireVerified";
 
 export default function App() {
   return (
     <>
       <Navbar />
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* Outside the guard on purpose — it's the one place an unverified,
+            signed-in user is allowed to land instead of being bounced. */}
         <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/problems" element={<ProblemListPage />} />
-        <Route path="/problems/:slug" element={<ProblemDetailPage />} />
-        <Route path="/contests" element={<ContestListPage />} />
-        <Route path="/contests/:slug" element={<ContestDetailPage />} />
-        <Route path="/contests/:slug/leaderboard" element={<ContestLeaderboardPage />} />
-        <Route path="/contests/:slug/problems/:label" element={<ContestProblemPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/submissions" element={<SubmissionsPage />} />
-          <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
-        </Route>
-        <Route element={<ProtectedRoute role="ADMIN" />}>
-          <Route path="/admin/problems" element={<AdminProblemsPage />} />
-          <Route path="/admin/problems/new" element={<AdminProblemFormPage />} />
-          <Route path="/admin/problems/:id/edit" element={<AdminProblemFormPage />} />
-          <Route path="/admin/contests" element={<AdminContestsPage />} />
-          <Route path="/admin/contests/new" element={<AdminContestFormPage />} />
-          <Route path="/admin/contests/:id/edit" element={<AdminContestFormPage />} />
+
+        <Route element={<RequireVerified />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/problems" element={<ProblemListPage />} />
+          <Route path="/problems/:slug" element={<ProblemDetailPage />} />
+          <Route path="/contests" element={<ContestListPage />} />
+          <Route path="/contests/:slug" element={<ContestDetailPage />} />
+          <Route path="/contests/:slug/leaderboard" element={<ContestLeaderboardPage />} />
+          <Route path="/contests/:slug/problems/:label" element={<ContestProblemPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/submissions" element={<SubmissionsPage />} />
+            <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
+          </Route>
+          <Route element={<ProtectedRoute role="ADMIN" />}>
+            <Route path="/admin/problems" element={<AdminProblemsPage />} />
+            <Route path="/admin/problems/new" element={<AdminProblemFormPage />} />
+            <Route path="/admin/problems/:id/edit" element={<AdminProblemFormPage />} />
+            <Route path="/admin/contests" element={<AdminContestsPage />} />
+            <Route path="/admin/contests/new" element={<AdminContestFormPage />} />
+            <Route path="/admin/contests/:id/edit" element={<AdminContestFormPage />} />
+          </Route>
         </Route>
       </Routes>
     </>
