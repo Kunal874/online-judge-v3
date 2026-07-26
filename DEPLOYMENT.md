@@ -131,6 +131,10 @@ over plain HTTP the browser discards them and nobody can stay logged in.
 Already running your own reverse proxy? Delete the `caddy` service and
 publish `web`'s port 8080 instead.
 
+No host yet, and no budget? [DEPLOY-ORACLE.md](DEPLOY-ORACLE.md) is a
+worked example of this whole document on a permanently free Oracle Cloud
+VM, including the parts that only bite on a 1 GB machine.
+
 ---
 
 ## Cookie configuration
