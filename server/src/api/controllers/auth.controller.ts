@@ -6,7 +6,7 @@ import {
   loginUser,
   toPublicUser,
   requestEmailVerification,
-  verifyEmail,
+  verifyEmailOtp,
   requestPasswordReset,
   resetPassword,
 } from "../services/auth.service.js";
@@ -54,9 +54,15 @@ export async function me(req: Request, res: Response) {
   res.json({ user: toPublicUser(user) });
 }
 
+// Requires a session rather than identifying the account from the code
+// itself: six digits is small enough that an unauthenticated endpoint would
+// let someone verify (and so take over) an account they merely named.
 export async function verifyEmailHandler(req: Request, res: Response) {
-  await verifyEmail(req.body.token);
-  res.status(204).send();
+  if (!req.user) throw new UnauthorizedError();
+  await verifyEmailOtp(req.user.id, req.body.code);
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user) throw new UnauthorizedError();
+  res.json({ user: toPublicUser(user) });
 }
 
 export async function resendVerification(req: Request, res: Response) {

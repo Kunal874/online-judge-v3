@@ -34,7 +34,9 @@ export function useRunJob() {
       submitMutation.mutate(input);
     },
     isSubmitting: submitMutation.isPending,
-    submitError: submitMutation.isError,
+    // The error itself, not just a boolean — the caller needs the API's
+    // message to tell "you're signed out" apart from "you're rate limited".
+    submitError: submitMutation.error,
     jobStatus: statusQuery.data,
     isRunning: !!jobId && (!statusQuery.data || ["waiting", "active", "delayed"].includes(statusQuery.data.status)),
   };

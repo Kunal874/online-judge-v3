@@ -42,6 +42,10 @@ export function useSubmission(problemId: string) {
       submitMutation.mutate(input);
     },
     isSubmitting: submitMutation.isPending,
+    // Callers must render this. A rejected submission used to resolve to
+    // nothing at all, so pressing Submit while signed out looked like a
+    // dead button rather than a 401.
+    submitError: submitMutation.error,
     submission,
     isJudging,
   };

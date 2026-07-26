@@ -13,7 +13,20 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-y-2 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+    <>
+      {/* Persistent rather than a one-time message on the register page:
+          someone who skipped verification has no other reminder that their
+          account is unfinished. */}
+      {user && !user.emailVerified && (
+        <div className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+          Your email isn&apos;t verified yet.{" "}
+          <Link to="/verify-email" className="font-medium underline">
+            Enter your code
+          </Link>
+          .
+        </div>
+      )}
+      <nav className="flex flex-wrap items-center justify-between gap-y-2 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
       <div className="flex flex-wrap items-center gap-4">
         <Link to="/" className="font-semibold">
           Online Judge
@@ -70,7 +83,8 @@ export default function Navbar() {
             <Link to="/register">Register</Link>
           </>
         )}
-      </div>
-    </nav>
+        </div>
+      </nav>
+    </>
   );
 }

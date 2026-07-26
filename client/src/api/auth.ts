@@ -30,8 +30,9 @@ export async function logoutRequest(): Promise<void> {
   await apiClient.post("/auth/logout");
 }
 
-export async function verifyEmailRequest(token: string): Promise<void> {
-  await apiClient.post("/auth/verify-email", { token });
+export async function verifyEmailRequest(code: string): Promise<PublicUser> {
+  const { data } = await apiClient.post<{ user: PublicUser }>("/auth/verify-email", { code });
+  return data.user;
 }
 
 export async function resendVerificationRequest(): Promise<void> {

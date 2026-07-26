@@ -7,6 +7,70 @@ interface SeedTestCase {
   isHidden?: boolean;
 }
 
+// A seeded generator, so the large cases below are identical on every run
+// and in every environment. Math.random() would reseed each time, quietly
+// giving different deployments different tests for the same problem.
+function makeRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    // xorshift32 — not good randomness, but stress data doesn't need it.
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    state >>>= 0;
+    return state / 0x100000000;
+  };
+}
+
+// Big enough that a quadratic solution cannot finish inside the time limit,
+// small enough that the intended linear one is never close to it. Verified
+// on the deployment target rather than assumed — see DEPLOY-ORACLE.md.
+const STRESS_N = 100_000;
+
+function fizzBuzzOutput(n: number): string {
+  const lines: string[] = [];
+  for (let i = 1; i <= n; i++) {
+    if (i % 15 === 0) lines.push("FizzBuzz");
+    else if (i % 3 === 0) lines.push("Fizz");
+    else if (i % 5 === 0) lines.push("Buzz");
+    else lines.push(String(i));
+  }
+  return lines.join("\n");
+}
+
+function maxSubarrayCase(seed: number): SeedTestCase {
+  const random = makeRandom(seed);
+  const values: number[] = [];
+  for (let i = 0; i < STRESS_N; i++) values.push(Math.floor(random() * 20_001) - 10_000);
+
+  let best = values[0];
+  let current = values[0];
+  for (let i = 1; i < values.length; i++) {
+    current = Math.max(values[i], current + values[i]);
+    best = Math.max(best, current);
+  }
+
+  return { input: `${values.length}\n${values.join(" ")}`, expectedOutput: String(best) };
+}
+
+function longPalindromeCase(length: number, palindromic: boolean): SeedTestCase {
+  const random = makeRandom(length + (palindromic ? 1 : 0));
+  const half = Array.from({ length: Math.floor(length / 2) }, () =>
+    String.fromCharCode(97 + Math.floor(random() * 26)),
+  );
+  const middle = length % 2 === 1 ? ["x"] : [];
+  const chars = [...half, ...middle, ...half.slice().reverse()];
+
+  if (!palindromic) {
+    // Break the very last character, and pick it relative to the first so
+    // it is guaranteed to differ — flipping to a fixed letter can silently
+    // land on the one already there and leave the string a palindrome.
+    chars[chars.length - 1] = chars[0] === "a" ? "b" : "a";
+  }
+
+  return { input: chars.join(""), expectedOutput: palindromic ? "YES" : "NO" };
+}
+
 const problems: {
   slug: string;
   title: string;
@@ -30,6 +94,11 @@ const problems: {
       { input: "5", expectedOutput: "1\n2\nFizz\n4\nBuzz", isHidden: false },
       { input: "15", expectedOutput: "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz" },
       { input: "1", expectedOutput: "1" },
+      // The stated upper bound. Not a timing test — n is far too small for
+      // that — but it does catch solutions that only work for tiny n, and
+      // it makes the output large enough to catch anyone building the
+      // answer by repeated string concatenation in a slow language.
+      { input: "10000", expectedOutput: fizzBuzzOutput(10_000) },
     ],
   },
   {
@@ -55,36 +124,84 @@ const problems: {
     statement:
       'Given a string `s`, print "YES" if it reads the same forwards and backwards ' +
       '(ignoring case), otherwise print "NO".',
-    constraints: "1 <= length of s <= 1000",
+    constraints: "1 <= length of s <= 200000",
     testCases: [
       { input: "racecar", expectedOutput: "YES", isHidden: false },
       { input: "hello", expectedOutput: "NO" },
       { input: "RaceCar", expectedOutput: "YES" },
       { input: "a", expectedOutput: "YES" },
+      // Quadratic solutions are easy to write here by accident — repeatedly
+      // slicing the ends off the string (`s = s[1:-1]`) copies it every
+      // iteration. At this length that is ~2*10^10 character copies and
+      // cannot finish; comparing against the reverse once is instant.
+      longPalindromeCase(200_000, true),
+      longPalindromeCase(200_000, false),
+    ],
+  },
+  {
+    slug: "maximum-subarray-sum",
+    title: "Maximum Subarray Sum",
+    difficulty: "MEDIUM",
+    tags: ["arrays", "dynamic-programming"],
+    statement:
+      "The first line contains an integer `n`. The second line contains `n` integers. " +
+      "Print the largest sum obtainable from any contiguous non-empty subarray.\n\n" +
+      "Checking every possible subarray is too slow for the largest inputs — the " +
+      "intended solution makes a single pass.",
+    constraints: "1 <= n <= 100000, -10^4 <= each value <= 10^4",
+    testCases: [
+      { input: "5\n-2 1 -3 4 -1", expectedOutput: "4", isHidden: false },
+      // All negative: the answer is the least-bad single element, not 0.
+      // A solution initialising `best = 0` fails exactly here.
+      { input: "4\n-5 -2 -9 -1", expectedOutput: "-1" },
+      { input: "1\n7", expectedOutput: "7" },
+      { input: "8\n-2 -3 4 -1 -2 1 5 -3", expectedOutput: "7" },
+      maxSubarrayCase(20260726),
+      maxSubarrayCase(987654321),
     ],
   },
 ];
 
 for (const { testCases, ...problem } of problems) {
+  // `update` carries the statement, constraints and tags, so editing a
+  // problem here and re-running actually changes it. Leaving this empty
+  // (the obvious upsert shape) makes the seed silently inert against any
+  // database that already ran it once. isPublished is deliberately absent:
+  // it is create-only, so re-seeding never republishes something an admin
+  // took down on purpose.
   const row = await prisma.problem.upsert({
     where: { slug: problem.slug },
-    update: {},
+    update: problem,
     create: { ...problem, isPublished: true },
   });
 
   // Without test cases a submission judges against nothing and comes back
   // INTERNAL_ERROR, so these aren't optional for a usable seed.
-  const existingCount = await prisma.testCase.count({ where: { problemId: row.id } });
-  if (existingCount === 0) {
+  const existing = await prisma.testCase.findMany({
+    where: { problemId: row.id },
+    orderBy: { orderIndex: "asc" },
+    select: { input: true, expectedOutput: true, isHidden: true },
+  });
+
+  const wanted = testCases.map((testCase) => ({
+    input: testCase.input,
+    expectedOutput: testCase.expectedOutput,
+    isHidden: testCase.isHidden ?? true,
+  }));
+
+  // Only touch them when they actually differ. Replacing cascades to
+  // TestCaseResult, so an unconditional delete would wipe the per-case
+  // breakdown of every past submission every time the seed runs.
+  if (JSON.stringify(existing) !== JSON.stringify(wanted)) {
+    await prisma.testCase.deleteMany({ where: { problemId: row.id } });
     await prisma.testCase.createMany({
-      data: testCases.map((testCase, orderIndex) => ({
+      data: wanted.map((testCase, orderIndex) => ({
         problemId: row.id,
-        input: testCase.input,
-        expectedOutput: testCase.expectedOutput,
-        isHidden: testCase.isHidden ?? true,
+        ...testCase,
         orderIndex,
       })),
     });
+    console.log(`  ${problem.slug}: wrote ${wanted.length} test cases`);
   }
 }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import request from "supertest";
 import { app, createUser, authCookie, TEST_PASSWORD } from "../helpers/factories.js";
 import { prisma } from "../../src/db/prisma.js";
-import { generateToken, hashToken } from "../../src/lib/tokens.js";
+import { generateToken, hashToken, generateOtp, otpMatches } from "../../src/lib/tokens.js";
 
 const VALID_REGISTRATION = {
   email: "new@example.com",
@@ -220,20 +220,103 @@ describe("password reset", () => {
   });
 });
 
-describe("email verification", () => {
-  it("marks the account verified and consumes the token", async () => {
-    const { raw, hash } = generateToken();
+describe("email verification by OTP", () => {
+  // The code is only ever stored hashed, so tests have to plant a known one
+  // the same way the service would rather than read it back out.
+  async function userWithPendingCode(code: string, overrides: { expiresInMs?: number } = {}) {
     const user = await createUser({ emailVerified: false });
     await prisma.user.update({
       where: { id: user.id },
-      data: { emailVerifyTokenHash: hash, emailVerifyExpires: new Date(Date.now() + 60_000) },
+      data: {
+        emailOtpHash: hashToken(code),
+        emailOtpExpires: new Date(Date.now() + (overrides.expiresInMs ?? 60_000)),
+        emailOtpAttempts: 0,
+      },
     });
+    return user;
+  }
 
-    const res = await request(app).post("/auth/verify-email").send({ token: raw });
-    expect(res.status).toBe(204);
+  it("marks the account verified and consumes the code", async () => {
+    const user = await userWithPendingCode("123456");
+
+    const res = await request(app)
+      .post("/auth/verify-email")
+      .set("Cookie", authCookie(user))
+      .send({ code: "123456" });
+    expect(res.status).toBe(200);
+    expect(res.body.user.emailVerified).toBe(true);
 
     const updated = await prisma.user.findUnique({ where: { id: user.id } });
     expect(updated?.emailVerified).toBe(true);
-    expect(updated?.emailVerifyTokenHash).toBeNull();
+    // Cleared, so the same digits can't be replayed before they expire.
+    expect(updated?.emailOtpHash).toBeNull();
+  });
+
+  it("rejects a wrong code and counts the attempt", async () => {
+    const user = await userWithPendingCode("123456");
+
+    const res = await request(app)
+      .post("/auth/verify-email")
+      .set("Cookie", authCookie(user))
+      .send({ code: "000000" });
+    expect(res.status).toBe(401);
+
+    const updated = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(updated?.emailVerified).toBe(false);
+    expect(updated?.emailOtpAttempts).toBe(1);
+  });
+
+  it("stops accepting guesses once the attempt cap is reached", async () => {
+    const user = await userWithPendingCode("123456");
+    await prisma.user.update({ where: { id: user.id }, data: { emailOtpAttempts: 5 } });
+
+    // Even the correct code is refused — otherwise the cap could be walked
+    // past by simply continuing to guess.
+    const res = await request(app)
+      .post("/auth/verify-email")
+      .set("Cookie", authCookie(user))
+      .send({ code: "123456" });
+    expect(res.status).toBe(429);
+
+    const updated = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(updated?.emailVerified).toBe(false);
+  });
+
+  it("rejects an expired code", async () => {
+    const user = await userWithPendingCode("123456", { expiresInMs: -1000 });
+
+    const res = await request(app)
+      .post("/auth/verify-email")
+      .set("Cookie", authCookie(user))
+      .send({ code: "123456" });
+    expect(res.status).toBe(401);
+  });
+
+  it("cannot be used to verify somebody else's account", async () => {
+    const victim = await userWithPendingCode("123456");
+    const attacker = await createUser({ emailVerified: false });
+
+    // The account comes from the session, never from the request body, so
+    // knowing another user's code buys nothing.
+    const res = await request(app)
+      .post("/auth/verify-email")
+      .set("Cookie", authCookie(attacker))
+      .send({ code: "123456" });
+    expect(res.status).toBe(401);
+
+    const stillUnverified = await prisma.user.findUnique({ where: { id: victim.id } });
+    expect(stillUnverified?.emailVerified).toBe(false);
+  });
+
+  it("requires a session", async () => {
+    const res = await request(app).post("/auth/verify-email").send({ code: "123456" });
+    expect(res.status).toBe(401);
+  });
+
+  it("generates six-digit codes that match their own hash", () => {
+    const { code, hash } = generateOtp();
+    expect(code).toMatch(/^\d{6}$/);
+    expect(otpMatches(code, hash)).toBe(true);
+    expect(otpMatches("999999", hashToken("111111"))).toBe(false);
   });
 });

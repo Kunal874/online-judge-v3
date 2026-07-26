@@ -1,15 +1,19 @@
 import { z } from "zod";
 
+// These messages are rendered verbatim under the matching field on the
+// registration form, so they are written as advice to a person rather than
+// as validator output. Rejecting input is cheap; explaining why is what
+// stops someone retrying the same thing three times and giving up.
 export const registerSchema = z.object({
-  email: z.string().trim().toLowerCase().email(),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   handle: z
     .string()
     .trim()
-    .min(3)
-    .max(20)
+    .min(3, "Handle must be at least 3 characters")
+    .max(20, "Handle can be at most 20 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Handle can only contain letters, numbers, and underscores"),
-  name: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(1, "Name is required").max(100, "Name can be at most 100 characters"),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -20,7 +24,10 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const verifyEmailSchema = z.object({
-  token: z.string().min(1),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code from your email"),
 });
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 

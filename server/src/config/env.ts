@@ -24,6 +24,13 @@ const envSchema = z.object({
   DOCKER_SOCKET_PATH: z.string().optional(),
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).default(2),
+  // Gate running and submitting code behind a verified email address.
+  // Off by default because turning it on without working mail delivery
+  // locks out every account on the instance, including new ones.
+  REQUIRE_EMAIL_VERIFICATION: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   // Unset = auto-create an Ethereal test SMTP account (dev only, nothing
   // is actually delivered). Set these once there's a real mail provider.
   SMTP_HOST: z.string().optional(),
@@ -46,6 +53,18 @@ const cookieSecure = parsed.data.COOKIE_SECURE ?? parsed.data.NODE_ENV === "prod
 // combination would silently log everyone out rather than fail loudly.
 if (parsed.data.COOKIE_SAMESITE === "none" && !cookieSecure) {
   console.error("Invalid environment configuration: COOKIE_SAMESITE=none requires secure cookies.");
+  process.exit(1);
+}
+
+// Without SMTP_HOST the mailer falls back to an Ethereal test account, which
+// delivers nothing to anyone. Requiring verification in that state means no
+// account can ever be verified, and every user is permanently locked out of
+// running and submitting — a failure that looks like a bug in the judge.
+if (parsed.data.REQUIRE_EMAIL_VERIFICATION && !parsed.data.SMTP_HOST) {
+  console.error(
+    "Invalid environment configuration: REQUIRE_EMAIL_VERIFICATION=true needs SMTP_HOST set, " +
+      "otherwise verification codes are never delivered and nobody can pass the check.",
+  );
   process.exit(1);
 }
 

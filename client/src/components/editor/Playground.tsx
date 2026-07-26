@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import type { Language, PublicProblemDetail } from "@online-judge/shared";
 import CodeEditor from "./CodeEditor";
 import { LANGUAGE_STUBS } from "../../lib/languageStubs";
+import { apiErrorMessage } from "../../lib/apiError";
 import { useRunJob } from "../../hooks/useRunJob";
 import { useSubmission } from "../../hooks/useSubmission";
+import { useAuth } from "../../context/AuthContext";
+import LoginRequiredDialog from "../auth/LoginRequiredDialog";
 import VerdictBadge from "../submissions/VerdictBadge";
 import TestCaseResultChip from "../submissions/TestCaseResultChip";
 
@@ -23,15 +26,27 @@ interface PlaygroundProps {
 export default function Playground({ language, problem, contestId }: PlaygroundProps) {
   const [code, setCode] = useState(LANGUAGE_STUBS[language]);
   const [stdin, setStdin] = useState("");
-  const { submit: submitRun, isSubmitting: isSubmittingRun, jobStatus, isRunning } = useRunJob();
+  // Non-null while the sign-in prompt is open; the string is the verb shown
+  // in its title, so the prompt can name whichever button was pressed.
+  const [loginPromptFor, setLoginPromptFor] = useState<string | null>(null);
+  const { user, isLoading: isLoadingUser } = useAuth();
+  const {
+    submit: submitRun,
+    isSubmitting: isSubmittingRun,
+    submitError: runError,
+    jobStatus,
+    isRunning,
+  } = useRunJob();
   const {
     submit: submitCode,
     isSubmitting: isSubmittingCode,
+    submitError: submitCodeError,
     submission,
     isJudging,
   } = useSubmission(problem.id);
 
   function handleRun() {
+    if (!user) return setLoginPromptFor("run code");
     submitRun({
       language,
       code,
@@ -42,11 +57,18 @@ export default function Playground({ language, problem, contestId }: PlaygroundP
   }
 
   function handleSubmit() {
+    if (!user) return setLoginPromptFor("submit a solution");
     submitCode({ language, code, contestId });
   }
 
   const result = jobStatus?.status === "completed" ? jobStatus.result : undefined;
-  const busy = isSubmittingRun || isRunning || isSubmittingCode || isJudging;
+  // Disabled while auth is still resolving, so a click during that window
+  // can't slip past the signed-out check above and fail as a bare 401.
+  const busy = isLoadingUser || isSubmittingRun || isRunning || isSubmittingCode || isJudging;
+  // A session can also expire between page load and clicking, so the
+  // client-side check above is a courtesy, not the guarantee — the server's
+  // rejection still has to be visible when it happens.
+  const requestError = submitCodeError ?? runError;
 
   return (
     <div>
@@ -91,34 +113,58 @@ export default function Playground({ language, problem, contestId }: PlaygroundP
         >
           {isJudging ? "Judging..." : "Submit"}
         </button>
+        {!user && !isLoadingUser && (
+          <span className="text-xs text-slate-500">Log in to run or submit</span>
+        )}
       </div>
 
-      {submission && (
+      {requestError && (
+        <p className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          {apiErrorMessage(requestError, "That didn't go through. Please try again.")}
+        </p>
+      )}
+
+      {/* Rendered from the moment Submit is pressed, not just once a verdict
+          exists — otherwise the page looks inert for the seconds it takes to
+          queue and judge, and people reasonably conclude nothing happened. */}
+      {(submission || isJudging) && (
         <div className="mt-4 rounded border border-slate-200 p-3 dark:border-slate-700">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <VerdictBadge verdict={submission.verdict} />
-              <span className="text-xs text-slate-500">
-                {submission.passedCount}/{submission.totalCount} test cases passed
-              </span>
+              {submission ? (
+                <>
+                  <VerdictBadge verdict={submission.verdict} />
+                  <span className="text-xs text-slate-500">
+                    {submission.passedCount}/{submission.totalCount} test cases passed
+                  </span>
+                </>
+              ) : (
+                <span className="text-sm text-slate-500">Judging your submission…</span>
+              )}
             </div>
-            <Link to={`/submissions/${submission.id}`} className="text-xs underline">
-              View details
-            </Link>
+            {submission && (
+              <Link to={`/submissions/${submission.id}`} className="text-xs underline">
+                View details
+              </Link>
+            )}
           </div>
-          {submission.results.length > 0 && (
+          {submission && submission.results.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {submission.results.map((r) => (
                 <TestCaseResultChip key={r.orderIndex} result={r} />
               ))}
             </div>
           )}
-          {submission.errorMessage && (
+          {submission?.errorMessage && (
             <pre className="mt-2 overflow-auto rounded bg-slate-100 p-2 text-xs whitespace-pre-wrap dark:bg-slate-800">
               {submission.errorMessage}
             </pre>
           )}
         </div>
+      )}
+
+      {loginPromptFor && (
+        <LoginRequiredDialog action={loginPromptFor} onClose={() => setLoginPromptFor(null)} />
       )}
     </div>
   );

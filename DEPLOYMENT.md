@@ -81,8 +81,20 @@ intended way to force a global logout after a suspected compromise.
 
 Leave the `SMTP_*` values unset and the server creates an Ethereal test
 account: nothing is delivered, previews are logged. That is fine for a
-staging box and useless in production — **email verification and password
-reset silently go nowhere**. Set real values before launch.
+staging box and useless in production — **verification codes and password
+resets silently go nowhere**. Set real values before launch.
+
+Verification is by 6-digit code, typed into the app rather than clicked in
+a link. The code is stored hashed, expires in 10 minutes, allows five wrong
+guesses, and is redeemed against the signed-in session — so knowing someone
+else's code does not let you verify their account.
+
+`REQUIRE_EMAIL_VERIFICATION` decides whether an unverified account may run
+or submit code. It defaults to `false`, and the API **refuses to boot** if
+it is set to `true` while `SMTP_HOST` is empty: with no mail delivery no
+code ever arrives, so nobody could pass the check and the judge would look
+broken rather than protected. Configure SMTP first, confirm a code actually
+lands in an inbox, then turn it on.
 
 ---
 

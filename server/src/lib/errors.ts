@@ -31,3 +31,12 @@ export class ConflictError extends AppError {
     super(409, message);
   }
 }
+
+// For limits enforced in a service rather than by the rate-limit middleware
+// — per-account cooldowns, guess caps — where the right answer is still
+// "you're doing that too often", not "you got it wrong".
+export class TooManyRequestsError extends AppError {
+  constructor(message: string) {
+    super(429, message);
+  }
+}

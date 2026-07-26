@@ -10,11 +10,13 @@ function layout(title: string, bodyHtml: string): string {
   `;
 }
 
-export function verifyEmailTemplate(link: string): string {
+export function verifyEmailTemplate(code: string, expiresInMinutes: number): string {
   return layout(
     "Verify your email",
-    `<p>Welcome to Online Judge! Click below to verify your email address.</p>
-     <p><a href="${link}">${link}</a></p>`,
+    `<p>Welcome to Online Judge. Enter this code to verify your email address:</p>
+     <p style="font-size: 32px; font-weight: bold; letter-spacing: 6px; margin: 24px 0;">${code}</p>
+     <p>It expires in ${expiresInMinutes} minutes. We will never ask you for it — anyone
+     who does is trying to take over your account.</p>`,
   );
 }
 

@@ -29,8 +29,13 @@ authRouter.post(
 authRouter.post("/logout", asyncHandler(authController.logout));
 authRouter.get("/me", requireAuth, asyncHandler(authController.me));
 
+// authLimiter as well as the service's own per-account guess cap: the cap
+// stops one account being brute-forced, this stops one client working
+// through many accounts.
 authRouter.post(
   "/verify-email",
+  requireAuth,
+  authLimiter,
   validateBody(verifyEmailSchema),
   asyncHandler(authController.verifyEmailHandler),
 );

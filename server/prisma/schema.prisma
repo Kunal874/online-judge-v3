@@ -25,10 +25,20 @@ model User {
   emailVerified Boolean  @default(false)
 
   // Hashed the same way passwordHash is — a DB leak shouldn't hand out usable tokens.
-  emailVerifyTokenHash String?   @unique
-  emailVerifyExpires   DateTime?
-  resetTokenHash       String?   @unique
-  resetTokenExpires    DateTime?
+  // Deliberately not @unique, unlike the link tokens: a 6-digit code has only
+  // a million values, so two users can legitimately hold the same one at once
+  // and a unique index would make the second request fail at random.
+  emailOtpHash     String?
+  emailOtpExpires  DateTime?
+  // Counts wrong guesses against the current code. Six digits is only ~20
+  // bits, so without a cap an attacker could simply walk the whole range.
+  emailOtpAttempts Int       @default(0)
+  // When the last code was sent, so resend can be throttled per account
+  // rather than only per IP.
+  emailOtpSentAt   DateTime?
+
+  resetTokenHash    String?   @unique
+  resetTokenExpires DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
