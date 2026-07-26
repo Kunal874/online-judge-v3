@@ -15,7 +15,14 @@ OJ_SSH_KEY="${OJ_SSH_KEY:-$HOME/.ssh/oracle-oj.key}"
 OJ_URL="${OJ_URL:-https://140.245.211.182.sslip.io}"
 REMOTE_DIR="online-judge-v2"
 
-SSH=(ssh -i "$OJ_SSH_KEY" -o StrictHostKeyChecking=accept-new "$OJ_HOST")
+# ServerAlive*: a long quiet stretch (npm ci resolving packages with no
+# output) can look idle enough that a router or ISP drops the connection
+# without telling either end — the build dies on the server while the
+# local terminal just sits there looking stuck. Pinging every 30s keeps
+# the connection looking alive; giving up after 6 missed pings (3 minutes)
+# still fails fast if the server is genuinely unreachable.
+SSH=(ssh -i "$OJ_SSH_KEY" -o StrictHostKeyChecking=accept-new \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=6 "$OJ_HOST")
 
 step() { printf "\n\033[1m==> %s\033[0m\n" "$1"; }
 fail() { printf "\n\033[31mFAILED: %s\033[0m\n" "$1" >&2; exit 1; }
