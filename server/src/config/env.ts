@@ -48,6 +48,13 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  // The mail's From address. Left unset, it defaults to SMTP_USER — the
+  // account actually authenticated with the SMTP server — which is the
+  // only address that address's own SPF/DKIM/DMARC cover. Only set this to
+  // something else once you own a domain and have configured that domain's
+  // DNS to authorize this server to send as it; otherwise the mail claims
+  // an identity nothing backs, and lands in spam.
+  SMTP_FROM: z.string().optional(),
 });
 
 // Fail fast on boot if the environment is misconfigured, rather than

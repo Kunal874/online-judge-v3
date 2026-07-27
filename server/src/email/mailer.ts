@@ -37,7 +37,14 @@ function getTransporter(): Promise<Transporter> {
 export async function sendMail(options: { to: string; subject: string; html: string }): Promise<void> {
   const transporter = await getTransporter();
   const info = await transporter.sendMail({
-    from: '"Online Judge" <no-reply@online-judge.local>',
+    // Must be the account actually authenticated above, not an invented
+    // domain. Gmail's own SPF/DKIM/DMARC are correctly configured for
+    // gmail.com — but they cover mail claiming to be *from* gmail.com. A
+    // message that authenticates as a real Gmail account while claiming a
+    // different (and non-existent) domain in From is exactly the mismatch
+    // spam filters are built to catch, regardless of how correct the
+    // sending server's own DNS is.
+    from: `"Online Judge" <${env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@online-judge.local"}>`,
     to: options.to,
     subject: options.subject,
     html: options.html,
