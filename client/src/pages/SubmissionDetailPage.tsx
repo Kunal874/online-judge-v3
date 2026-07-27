@@ -15,9 +15,9 @@ export default function SubmissionDetailPage() {
     enabled: !!id,
   });
 
-  if (isPending) return <p className="p-8 text-slate-500">Loading...</p>;
+  if (isPending) return <p className="p-8 text-[var(--ink-muted)]">Loading...</p>;
   if (isError || !submission) {
-    return <p className="p-8 text-red-600 dark:text-red-400">Submission not found.</p>;
+    return <p className="p-8 text-[var(--danger-ink)]">Submission not found.</p>;
   }
 
   return (
@@ -27,7 +27,7 @@ export default function SubmissionDetailPage() {
         <VerdictBadge verdict={submission.verdict} />
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+      <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-[var(--ink-muted)]">
         <Link to={`/problems/${submission.problemSlug}`} className="underline">
           View problem
         </Link>
@@ -48,7 +48,7 @@ export default function SubmissionDetailPage() {
       )}
 
       {submission.errorMessage && (
-        <pre className="mb-4 overflow-auto rounded bg-slate-100 p-3 text-xs whitespace-pre-wrap dark:bg-slate-800">
+        <pre className="mb-4 overflow-auto rounded bg-[color-mix(in_srgb,var(--ink)_7%,transparent)] p-3 text-xs whitespace-pre-wrap ">
           {submission.errorMessage}
         </pre>
       )}

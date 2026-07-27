@@ -33,32 +33,32 @@ export default function LoginRequiredDialog({ action, onClose }: LoginRequiredDi
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+        className="w-full max-w-sm rounded-[28px] border border-[var(--edge)] bg-[var(--surface-raised)] p-5 shadow-lg  "
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="login-required-title" className="text-lg font-semibold">
           Log in to {action}
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        <p className="mt-2 text-sm text-[var(--ink-muted)]">
           Your code stays right here — we&apos;ll bring you back to this problem afterwards.
         </p>
         <div className="mt-4 flex gap-2">
           <button
             onClick={() => navigate(`/login?next=${next}`)}
-            className="flex-1 rounded bg-slate-900 px-3 py-2 text-sm text-white dark:bg-slate-100 dark:text-slate-900"
+            className="flex-1 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
           >
             Log in
           </button>
           <button
             onClick={() => navigate(`/register?next=${next}`)}
-            className="flex-1 rounded border border-slate-300 px-3 py-2 text-sm dark:border-slate-600"
+            className="flex-1 rounded border border-[var(--edge)] px-3 py-2 text-sm "
           >
             Create account
           </button>
         </div>
         <button
           onClick={onClose}
-          className="mt-3 w-full text-xs text-slate-500 underline dark:text-slate-400"
+          className="mt-3 w-full text-xs text-[var(--ink-muted)] underline dark:text-[var(--ink-muted)]"
         >
           Keep editing
         </button>

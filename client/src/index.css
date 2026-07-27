@@ -1,8 +1,160 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Organic — the design system this product is built on. Warm cream ground,
+   terracotta accent, sage second voice, Caprasimo display over Figtree.
+   These tokens are the source of truth: reach for them, never raw hex. */
+@import url("https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap");
+
 @custom-variant dark (&:where(.dark, .dark *));
 
-body {
-  @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+@theme {
+  --font-heading: "Caprasimo", ui-serif, system-ui, sans-serif;
+  --font-body: "Figtree", ui-sans-serif, system-ui, sans-serif;
+
+  /* Neutral ramp — warm, never grey. Desaturating these into greys is the
+     single change that would kill the whole palette. */
+  --color-sand-100: #f9f4ed;
+  --color-sand-200: #eee7db;
+  --color-sand-300: #dcd3c4;
+  --color-sand-400: #c0b6a5;
+  --color-sand-500: #a19786;
+  --color-sand-600: #82796a;
+  --color-sand-700: #645c50;
+  --color-sand-800: #474238;
+  --color-sand-900: #2e2b25;
+  --color-sand-950: #201e1d;
+
+  /* Terracotta — the primary accent. */
+  --color-clay-100: #fff2eb;
+  --color-clay-200: #ffe1d0;
+  --color-clay-300: #ffc6a5;
+  --color-clay-400: #f6a06b;
+  --color-clay-500: #d67f48;
+  --color-clay-600: #b2622d;
+  --color-clay-700: #8c491a;
+  --color-clay-800: #643312;
+  --color-clay-900: #402310;
+
+  /* Sage — a genuine second voice, not a highlight. */
+  --color-sage-100: #f0fae1;
+  --color-sage-200: #e1eecc;
+  --color-sage-300: #ccdbb2;
+  --color-sage-400: #aebf92;
+  --color-sage-500: #8fa073;
+  --color-sage-600: #728157;
+  --color-sage-700: #56633f;
+  --color-sage-800: #3d472b;
+  --color-sage-900: #272e1b;
+
+  --radius-organic: 28px;
+}
+
+/* Semantic roles, so components never name a ramp step directly and the
+   dark theme becomes a re-point of these values rather than a second set of
+   rules hung off every component. */
+:root {
+  --ground: #f5ead8;
+  --surface: #ebddc5;
+  --surface-raised: #f9f4ed;
+  --ink: #201e1d;
+  --ink-muted: color-mix(in srgb, #201e1d 58%, transparent);
+  --edge: color-mix(in srgb, #201e1d 14%, transparent);
+  --accent: #c67139;
+  --accent-strong: #b2622d;
+  --accent-contrast: #fff8ef;
+  --accent-tint: #fff2eb;
+  --accent-ink: #643312;
+  --second: #7a8a5e;
+  --second-tint: #f0fae1;
+  --second-ink: #3d472b;
+  --danger: #b23a2d;
+  --danger-tint: #ffe9e4;
+  --danger-ink: #6d2119;
+}
+
+.dark {
+  /* Same hues, inverted ground. The accents keep their identity rather than
+     being swapped for brighter substitutes, so it still reads as one brand
+     with the lights off. */
+  --ground: #1a1815;
+  --surface: #232019;
+  --surface-raised: #2c2820;
+  --ink: #f9f4ed;
+  --ink-muted: color-mix(in srgb, #f9f4ed 55%, transparent);
+  --edge: color-mix(in srgb, #f9f4ed 16%, transparent);
+  --accent: #e08b4f;
+  --accent-strong: #f6a06b;
+  --accent-contrast: #241407;
+  --accent-tint: color-mix(in srgb, #e08b4f 20%, transparent);
+  --accent-ink: #ffc6a5;
+  --second: #9fb27c;
+  --second-tint: color-mix(in srgb, #9fb27c 20%, transparent);
+  --second-ink: #ccdbb2;
+  --danger: #e0715c;
+  --danger-tint: color-mix(in srgb, #e0715c 20%, transparent);
+  --danger-ink: #ffc9bd;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--ground);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+  }
+
+  /* Themed, never the browser default — the blue ring belongs to another
+     product and reads as a bug in this one. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  /* Matched to the ground so a scrollbar doesn't punch a grey hole through
+     a warm surface. */
+  * {
+    scrollbar-color: var(--edge) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@layer components {
+  /* Over-rounded containers and pill controls are the system's signature.
+     Sharp corners and hairline-only geometry are explicitly out. */
+  .surface {
+    background: var(--surface);
+    border-radius: var(--radius-organic);
+  }
+
+  .surface-raised {
+    background: var(--surface-raised);
+    border-radius: var(--radius-organic);
+  }
+
+  .hairline {
+    border: 1px solid var(--edge);
+  }
 }

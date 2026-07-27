@@ -65,7 +65,7 @@ export default function VerifyEmailPage() {
     <main className="mx-auto flex max-w-sm flex-col gap-4 px-4 py-20">
       <div>
         <h1 className="text-2xl font-semibold">Verify your email</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">
           We sent a 6-digit code to <span className="font-medium">{user.email}</span>. Enter it
           below to finish setting up your account.
         </p>
@@ -86,20 +86,20 @@ export default function VerifyEmailPage() {
           autoFocus
           placeholder="000000"
           aria-label="6-digit verification code"
-          className="w-full rounded border border-slate-300 bg-transparent px-3 py-3 text-center font-mono text-2xl tracking-[0.4em] dark:border-slate-600"
+          className="w-full rounded border border-[var(--edge)] bg-transparent px-3 py-3 text-center font-mono text-2xl tracking-[0.4em] "
         />
 
         {error && (
-          <p className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          <p className="rounded border border-[var(--danger)] bg-[var(--danger-tint)] p-2 text-sm text-[var(--danger-ink)]">
             {error}
           </p>
         )}
-        {notice && <p className="text-sm text-green-700 dark:text-green-400">{notice}</p>}
+        {notice && <p className="text-sm text-[var(--second-ink)] ">{notice}</p>}
 
         <button
           type="submit"
           disabled={submitting || code.length !== 6}
-          className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           {submitting ? "Verifying..." : "Verify"}
         </button>
@@ -117,7 +117,7 @@ export default function VerifyEmailPage() {
             unverified. This is only an escape hatch for a typo'd email
             address, where no code could ever arrive and the account is a
             dead end otherwise. */}
-        <button onClick={() => logout()} className="text-slate-500 underline">
+        <button onClick={() => logout()} className="text-[var(--ink-muted)] underline">
           Wrong email? Log out
         </button>
       </div>

@@ -21,25 +21,25 @@ export default function AdminProblemsPage() {
         <h1 className="text-2xl font-semibold">Manage Problems</h1>
         <Link
           to="/admin/problems/new"
-          className="rounded bg-slate-900 px-3 py-2 text-sm text-white dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           New Problem
         </Link>
       </div>
 
-      {isPending && <p className="text-slate-500">Loading...</p>}
+      {isPending && <p className="text-[var(--ink-muted)]">Loading...</p>}
 
       <div className="flex flex-col gap-2">
         {data?.items.map((problem) => (
           <div
             key={problem.id}
-            className="flex items-center justify-between rounded border border-slate-200 px-4 py-3 dark:border-slate-700"
+            className="flex items-center justify-between rounded border border-[var(--edge)] px-4 py-3 "
           >
             <div className="flex items-center gap-3">
               <span className="font-medium">{problem.title}</span>
               <DifficultyBadge difficulty={problem.difficulty} />
               {!problem.isPublished && (
-                <span className="rounded bg-slate-200 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                <span className="rounded bg-[color-mix(in_srgb,var(--ink)_10%,transparent)] px-2 py-0.5 text-xs text-[var(--ink-muted)]  ">
                   Draft
                 </span>
               )}
@@ -54,7 +54,7 @@ export default function AdminProblemsPage() {
                     deleteMutation.mutate(problem.id);
                   }
                 }}
-                className="text-red-600 dark:text-red-400"
+                className="text-[var(--danger-ink)]"
               >
                 Delete
               </button>

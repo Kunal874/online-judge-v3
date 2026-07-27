@@ -21,25 +21,25 @@ export default function AdminContestsPage() {
         <h1 className="text-2xl font-semibold">Manage Contests</h1>
         <Link
           to="/admin/contests/new"
-          className="rounded bg-slate-900 px-3 py-2 text-sm text-white dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           New Contest
         </Link>
       </div>
 
-      {isPending && <p className="text-slate-500">Loading...</p>}
-      {data && data.items.length === 0 && <p className="text-slate-500">No contests yet.</p>}
+      {isPending && <p className="text-[var(--ink-muted)]">Loading...</p>}
+      {data && data.items.length === 0 && <p className="text-[var(--ink-muted)]">No contests yet.</p>}
 
       <div className="flex flex-col gap-2">
         {data?.items.map((contest) => (
           <div
             key={contest.id}
-            className="flex items-center justify-between rounded border border-slate-200 px-4 py-3 dark:border-slate-700"
+            className="flex items-center justify-between rounded border border-[var(--edge)] px-4 py-3 "
           >
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-medium">{contest.title}</span>
               <ContestStatusBadge status={contest.status} />
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-[var(--ink-muted)]">
                 {contest.problemCount} problems · {contest.registrationCount} registered
               </span>
             </div>
@@ -53,7 +53,7 @@ export default function AdminContestsPage() {
                     deleteMutation.mutate(contest.id);
                   }
                 }}
-                className="text-red-600 dark:text-red-400"
+                className="text-[var(--danger-ink)]"
               >
                 Delete
               </button>

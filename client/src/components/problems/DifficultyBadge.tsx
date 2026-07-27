@@ -1,14 +1,19 @@
 import type { Difficulty } from "@online-judge/shared";
 
+// Sage for easy, terracotta for medium, deep terracotta for hard — one
+// palette walked in intensity rather than three unrelated hues, so
+// difficulty reads as a scale instead of a category.
 const STYLES: Record<Difficulty, string> = {
-  EASY: "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/40",
-  MEDIUM: "text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40",
-  HARD: "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/40",
+  EASY: "bg-[var(--second-tint)] text-[var(--second-ink)]",
+  MEDIUM: "bg-[var(--accent-tint)] text-[var(--accent-ink)]",
+  HARD: "bg-[var(--danger-tint)] text-[var(--danger-ink)]",
 };
 
 export default function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
   return (
-    <span className={`rounded px-2 py-0.5 text-xs font-medium ${STYLES[difficulty]}`}>
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${STYLES[difficulty]}`}
+    >
       {difficulty[0] + difficulty.slice(1).toLowerCase()}
     </span>
   );

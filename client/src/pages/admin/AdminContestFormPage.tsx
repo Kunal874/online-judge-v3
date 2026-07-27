@@ -53,7 +53,7 @@ function toFormState(contest: AdminContest): FormState {
 }
 
 const inputClass =
-  "w-full rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600";
+  "w-full w-full rounded-full border border-[var(--edge)] bg-[var(--surface)] px-4 py-2 text-smtext-sm ";
 
 // Same shape as AdminProblemFormPage: load first, then mount the form so
 // its initial state comes from a useState initializer rather than an effect.
@@ -67,7 +67,7 @@ export default function AdminContestFormPage() {
     enabled: isEditing,
   });
 
-  if (isEditing && isPending) return <p className="p-8 text-slate-500">Loading...</p>;
+  if (isEditing && isPending) return <p className="p-8 text-[var(--ink-muted)]">Loading...</p>;
 
   return (
     <ContestForm
@@ -178,12 +178,12 @@ function ContestForm({
           Published (visible to everyone)
         </label>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-[var(--danger-ink)]">{error}</p>}
 
         <button
           type="submit"
           disabled={saveMutation.isPending}
-          className="rounded bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           {saveMutation.isPending ? "Saving..." : "Save"}
         </button>

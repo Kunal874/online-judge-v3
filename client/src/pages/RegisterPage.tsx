@@ -5,8 +5,8 @@ import { useNextPath } from "../hooks/useNextPath";
 import { apiErrorMessage, apiFieldErrors } from "../lib/apiError";
 
 const INPUT_CLASS = "w-full rounded border bg-transparent px-3 py-2";
-const OK_BORDER = "border-slate-300 dark:border-slate-600";
-const BAD_BORDER = "border-red-500 dark:border-red-500";
+const OK_BORDER = "border-[var(--edge)]";
+const BAD_BORDER = "border-[var(--danger)]";
 
 interface FieldProps {
   label: string;
@@ -23,9 +23,9 @@ function Field({ label, hint, error, children }: FieldProps) {
       {/* The hint stays visible until it is replaced by a real error, so the
           rules are known before the form is submitted rather than after. */}
       {error ? (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-xs text-[var(--danger-ink)]">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-slate-500">{hint}</p>
+        <p className="text-xs text-[var(--ink-muted)]">{hint}</p>
       ) : null}
     </div>
   );
@@ -83,7 +83,7 @@ export default function RegisterPage() {
     <main className="mx-auto flex max-w-sm flex-col gap-4 px-4 py-20">
       <div>
         <h1 className="text-2xl font-semibold">Create an account</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[var(--ink-muted)]">
           Already registered?{" "}
           <Link to={`/login?next=${encodeURIComponent(next)}`} className="underline">
             Log in instead
@@ -138,7 +138,7 @@ export default function RegisterPage() {
         </Field>
 
         {error && (
-          <p className="rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          <p className="rounded border border-[var(--danger)] bg-[var(--danger-tint)] p-2 text-sm text-[var(--danger-ink)]">
             {error}
           </p>
         )}
@@ -146,7 +146,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           {submitting ? "Creating account..." : "Register"}
         </button>

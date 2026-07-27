@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { fetchProblems } from "../api/problems";
 import ProblemCard from "../components/problems/ProblemCard";
+import { Select, TextInput } from "../components/ui/Input";
+import Button from "../components/ui/Button";
 
 const PAGE_SIZE = 20;
 
@@ -35,56 +37,57 @@ export default function ProblemListPage() {
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="mb-6 text-2xl font-semibold">Problems</h1>
+    <main className="mx-auto max-w-4xl px-5 py-12">
+      <header className="mb-8">
+        <h1 className="text-4xl">Problems</h1>
+        <p className="mt-1 text-[14px] text-[var(--ink-muted)]">
+          Every problem hides most of its tests. Passing the samples is the start, not the finish.
+        </p>
+      </header>
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <input
+      <div className="mb-5 flex flex-wrap gap-2">
+        <TextInput
           type="text"
-          placeholder="Search by title..."
+          placeholder="Search titles…"
           defaultValue={search}
           onKeyDown={(e) => {
             if (e.key === "Enter") updateParam("search", e.currentTarget.value);
           }}
-          className="min-w-0 flex-1 rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
+          className="min-w-0 flex-1"
         />
-        <select
-          value={difficulty}
-          onChange={(e) => updateParam("difficulty", e.target.value)}
-          className="rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
-        >
+        <Select value={difficulty} onChange={(e) => updateParam("difficulty", e.target.value)}>
           <option value="">All difficulties</option>
           <option value="EASY">Easy</option>
           <option value="MEDIUM">Medium</option>
           <option value="HARD">Hard</option>
-        </select>
-        <input
+        </Select>
+        <TextInput
           type="text"
-          placeholder="Filter by tag..."
+          placeholder="Tag…"
           defaultValue={tag}
           onKeyDown={(e) => {
             if (e.key === "Enter") updateParam("tag", e.currentTarget.value);
           }}
-          className="w-40 rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
+          className="w-36"
         />
       </div>
 
       {tag && (
-        <div className="mb-4 flex items-center gap-2 text-xs text-slate-500">
-          Filtering by tag:
+        <div className="mb-4 flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
+          Filtering by tag
           <button
             onClick={() => updateParam("tag", "")}
-            className="rounded bg-slate-100 px-2 py-0.5 hover:line-through dark:bg-slate-800"
+            className="rounded-full bg-[var(--accent-tint)] px-2.5 py-0.5 text-[var(--accent-ink)] hover:line-through"
           >
             {tag} ×
           </button>
         </div>
       )}
 
-      {isPending && <p className="text-slate-500">Loading...</p>}
-      {isError && <p className="text-red-600 dark:text-red-400">Failed to load problems.</p>}
+      {isPending && <p className="text-[var(--ink-muted)]">Loading…</p>}
+      {isError && <p className="text-[var(--danger-ink)]">Failed to load problems.</p>}
       {data && data.items.length === 0 && (
-        <p className="text-slate-500">No problems match your filters.</p>
+        <p className="text-[var(--ink-muted)]">No problems match those filters.</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -98,24 +101,26 @@ export default function ProblemListPage() {
       </div>
 
       {data && data.total > PAGE_SIZE && (
-        <div className="mt-6 flex items-center justify-center gap-4 text-sm">
-          <button
+        <div className="mt-8 flex items-center justify-center gap-4 text-[13px]">
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={page <= 1}
             onClick={() => updateParam("page", String(page - 1))}
-            className="disabled:opacity-40"
           >
             Previous
-          </button>
-          <span>
-            Page {page} of {totalPages}
+          </Button>
+          <span className="text-[var(--ink-muted)] tabular-nums">
+            {page} / {totalPages}
           </span>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={page >= totalPages}
             onClick={() => updateParam("page", String(page + 1))}
-            className="disabled:opacity-40"
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
     </main>

@@ -37,7 +37,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="rounded border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-600"
+          className="w-full rounded-full border border-[var(--edge)] bg-[var(--surface)] px-4 py-2 text-sm"
         />
         <input
           type="password"
@@ -45,18 +45,18 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="rounded border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-600"
+          className="w-full rounded-full border border-[var(--edge)] bg-[var(--surface)] px-4 py-2 text-sm"
         />
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-[var(--danger-ink)]">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           {submitting ? "Logging in..." : "Log in"}
         </button>
       </form>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-[var(--ink-muted)]">
         No account?{" "}
         <Link to={`/register?next=${encodeURIComponent(next)}`} className="underline">
           Register

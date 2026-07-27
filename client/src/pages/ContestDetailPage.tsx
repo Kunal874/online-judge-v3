@@ -39,11 +39,11 @@ export default function ContestDetailPage() {
         : null;
   const remainingMs = useCountdown(countdownTarget ?? null);
 
-  if (isPending) return <main className="mx-auto max-w-3xl px-4 py-12 text-slate-500">Loading...</main>;
+  if (isPending) return <main className="mx-auto max-w-3xl px-4 py-12 text-[var(--ink-muted)]">Loading...</main>;
   if (isError || !contest)
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
-        <p className="text-red-600 dark:text-red-400">Contest not found.</p>
+        <p className="text-[var(--danger-ink)]">Contest not found.</p>
       </main>
     );
 
@@ -54,18 +54,18 @@ export default function ContestDetailPage() {
         <ContestStatusBadge status={contest.status} />
       </div>
 
-      <div className="mb-6 text-sm text-slate-500">
+      <div className="mb-6 text-sm text-[var(--ink-muted)]">
         {new Date(contest.startsAt).toLocaleString()} –{" "}
         {new Date(contest.endsAt).toLocaleString()}
         {remainingMs !== null && (
-          <span className="ml-2 font-medium text-slate-700 dark:text-slate-300">
+          <span className="ml-2 font-medium text-[var(--ink)]">
             {contest.status === "UPCOMING" ? "Starts in" : "Ends in"} {formatDuration(remainingMs)}
           </span>
         )}
       </div>
 
       {contest.description && (
-        <p className="mb-6 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
+        <p className="mb-6 whitespace-pre-wrap text-sm text-[var(--ink)]">
           {contest.description}
         </p>
       )}
@@ -73,7 +73,7 @@ export default function ContestDetailPage() {
       <div className="mb-8 flex flex-wrap items-center gap-3">
         {contest.status !== "ENDED" &&
           (!user ? (
-            <Link to="/login" className="rounded bg-slate-900 px-4 py-2 text-sm text-white dark:bg-slate-100 dark:text-slate-900">
+            <Link to="/login" className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45">
               Log in to register
             </Link>
           ) : contest.isRegistered ? (
@@ -84,7 +84,7 @@ export default function ContestDetailPage() {
             <button
               onClick={() => register.mutate()}
               disabled={register.isPending}
-              className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+              className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
             >
               {register.isPending ? "Registering..." : "Register"}
             </button>
@@ -97,22 +97,22 @@ export default function ContestDetailPage() {
       <h2 className="mb-3 text-lg font-semibold">Problems</h2>
 
       {contest.problems === null ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[var(--ink-muted)]">
           Problems are revealed when the contest starts.
         </p>
       ) : contest.problems.length === 0 ? (
-        <p className="text-sm text-slate-500">No problems have been added to this contest.</p>
+        <p className="text-sm text-[var(--ink-muted)]">No problems have been added to this contest.</p>
       ) : (
         <div className="flex flex-col gap-2">
           {contest.problems.map((cp) => (
             <Link
               key={cp.label}
               to={`/contests/${contest.slug}/problems/${cp.label}`}
-              className="flex items-center gap-3 rounded border border-slate-200 p-3 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
+              className="flex items-center gap-3 rounded border border-[var(--edge)] p-3 hover:border-[var(--accent)]"
             >
-              <span className="w-6 font-mono text-sm text-slate-500">{cp.label}</span>
+              <span className="w-6 font-mono text-sm text-[var(--ink-muted)]">{cp.label}</span>
               <span className="flex-1">{cp.problem.title}</span>
-              <span className="text-xs text-slate-500">{cp.points} pts</span>
+              <span className="text-xs text-[var(--ink-muted)]">{cp.points} pts</span>
               <DifficultyBadge difficulty={cp.problem.difficulty} />
             </Link>
           ))}

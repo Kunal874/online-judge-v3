@@ -24,9 +24,16 @@ import RequireVerified from "./components/layout/RequireVerified";
 
 export default function App() {
   return (
-    <>
-      <Navbar />
-      <Routes>
+    // A full-height shell with the navbar fixed and the routed page taking
+    // the rest. The workspace needs to size itself against the viewport, and
+    // subtracting a hard-coded navbar height breaks the moment the
+    // unverified-email banner appears above it.
+    <div className="flex h-dvh flex-col">
+      <div className="shrink-0">
+        <Navbar />
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <Routes>
         {/* Outside the guard on purpose — it's the one place an unverified,
             signed-in user is allowed to land instead of being bounced. */}
         <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -55,9 +62,10 @@ export default function App() {
             <Route path="/admin/contests" element={<AdminContestsPage />} />
             <Route path="/admin/contests/new" element={<AdminContestFormPage />} />
             <Route path="/admin/contests/:id/edit" element={<AdminContestFormPage />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </>
+        </Routes>
+      </div>
+    </div>
   );
 }

@@ -43,7 +43,7 @@ export default function ContestListPage() {
         <select
           value={status}
           onChange={(e) => updateParam("status", e.target.value)}
-          className="rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"
+          className="w-full rounded-full border border-[var(--edge)] bg-[var(--surface)] px-4 py-2 text-smtext-sm "
         >
           <option value="">All contests</option>
           <option value="RUNNING">Live now</option>
@@ -52,16 +52,16 @@ export default function ContestListPage() {
         </select>
       </div>
 
-      {isPending && <p className="text-slate-500">Loading...</p>}
-      {isError && <p className="text-red-600 dark:text-red-400">Failed to load contests.</p>}
-      {data && data.items.length === 0 && <p className="text-slate-500">No contests yet.</p>}
+      {isPending && <p className="text-[var(--ink-muted)]">Loading...</p>}
+      {isError && <p className="text-[var(--danger-ink)]">Failed to load contests.</p>}
+      {data && data.items.length === 0 && <p className="text-[var(--ink-muted)]">No contests yet.</p>}
 
       <div className="flex flex-col gap-2">
         {data?.items.map((contest) => (
           <Link
             key={contest.id}
             to={`/contests/${contest.slug}`}
-            className="rounded border border-slate-200 p-4 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
+            className="rounded border border-[var(--edge)] p-4 hover:border-[var(--accent)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-medium">{contest.title}</span>
@@ -72,7 +72,7 @@ export default function ContestListPage() {
                 <ContestStatusBadge status={contest.status} />
               </div>
             </div>
-            <div className="mt-1 text-xs text-slate-500">
+            <div className="mt-1 text-xs text-[var(--ink-muted)]">
               {formatWindow(contest.startsAt, contest.endsAt)}
               {contest.problemCount > 0 && ` · ${contest.problemCount} problems`}
               {` · ${contest.registrationCount} registered`}

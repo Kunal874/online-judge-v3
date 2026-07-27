@@ -1,18 +1,24 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { ButtonLink } from "../components/ui/Button";
 
-const FEATURES = [
+// Deliberately not a feature grid. Each of these is a claim about how the
+// judge behaves, phrased as the thing a solver actually experiences.
+const CLAIMS = [
   {
-    title: "Write and run code",
-    body: "C, C++, Java and Python in the browser. Run against your own input before committing to a submission.",
+    kicker: "The tests you can't see",
+    title: "Samples are the easy half",
+    body: "Most cases stay hidden, and the big ones are sized so a slow-but-correct solution fails on time rather than on logic. Passing locally proves less than you'd like.",
   },
   {
-    title: "Judged in a sandbox",
-    body: "Every submission executes in a throwaway container with no network, a read-only filesystem, and hard time and memory limits.",
+    kicker: "The sandbox",
+    title: "Your code runs in a locked room",
+    body: "Every submission executes in a throwaway container with no network, a read-only filesystem, a memory ceiling and a process cap. Nothing you write can reach anything else.",
   },
   {
-    title: "Compete",
-    body: "Timed contests with an ICPC-style leaderboard: ranked by problems solved, ties broken on penalty time.",
+    kicker: "Contests",
+    title: "Ranked on solves, split on penalty",
+    body: "ICPC scoring: problems solved first, time and rejected attempts as the tiebreak. Unsolved problems cost nothing, so there's no reason not to try one.",
   },
 ];
 
@@ -20,46 +26,49 @@ export default function HomePage() {
   const { user } = useAuth();
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-10 px-4 py-20">
-      <section className="flex flex-col items-center gap-4 text-center">
-        <h1 className="text-4xl font-semibold">Online Judge</h1>
-        <p className="max-w-xl text-slate-600 dark:text-slate-400">
-          Solve programming problems and have them graded automatically against a set of test
-          cases — most of which you don&apos;t get to see.
+    // Left-aligned and asymmetric, per the system: content hugs the left
+    // edge with the whitespace kept on the right.
+    <main className="mx-auto max-w-4xl px-5 py-20">
+      <section className="max-w-2xl">
+        <p className="mb-4 text-[11px] tracking-[0.14em] text-[var(--accent)] uppercase">
+          C · C++ · Java · Python
         </p>
-        <div className="mt-2 flex flex-wrap justify-center gap-3">
-          <Link
-            to="/problems"
-            className="rounded bg-slate-900 px-5 py-2.5 text-sm text-white dark:bg-slate-100 dark:text-slate-900"
-          >
-            Browse problems
-          </Link>
+        <h1 className="text-5xl leading-[1.05] sm:text-6xl">
+          You don&apos;t need more problems. You need to know why you failed.
+        </h1>
+        <p className="mt-5 text-[16px] text-[var(--ink-muted)]">
+          Write a solution, run it against your own input, then submit it to a sandbox that tells
+          you which case broke and how close you were — without handing you the answer.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <ButtonLink to="/problems">Start solving</ButtonLink>
+          {user ? (
+            <ButtonLink to="/profile" variant="secondary">
+              Your activity
+            </ButtonLink>
+          ) : (
+            <ButtonLink to="/register" variant="secondary">
+              Create an account
+            </ButtonLink>
+          )}
           <Link
             to="/contests"
-            className="rounded border border-slate-300 px-5 py-2.5 text-sm dark:border-slate-600"
+            className="text-[13px] text-[var(--ink-muted)] underline underline-offset-4 hover:text-[var(--ink)]"
           >
-            View contests
+            or look at contests
           </Link>
-          {!user && (
-            <Link
-              to="/register"
-              className="rounded border border-slate-300 px-5 py-2.5 text-sm dark:border-slate-600"
-            >
-              Create an account
-            </Link>
-          )}
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        {FEATURES.map((feature) => (
-          <div
-            key={feature.title}
-            className="rounded-lg border border-slate-200 p-4 dark:border-slate-700"
-          >
-            <h2 className="text-sm font-semibold">{feature.title}</h2>
-            <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">{feature.body}</p>
-          </div>
+      <section className="mt-20 grid gap-4 sm:grid-cols-3">
+        {CLAIMS.map((claim) => (
+          <article key={claim.title} className="surface flex flex-col gap-2 p-5">
+            <p className="text-[10px] tracking-[0.1em] text-[var(--accent)] uppercase">
+              {claim.kicker}
+            </p>
+            <h2 className="text-[18px]">{claim.title}</h2>
+            <p className="text-[13px] text-[var(--ink-muted)]">{claim.body}</p>
+          </article>
         ))}
       </section>
     </main>

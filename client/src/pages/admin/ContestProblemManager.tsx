@@ -5,7 +5,7 @@ import { addContestProblem, fetchAdminContest, removeContestProblem } from "../.
 import { fetchAdminProblems } from "../../api/problems";
 
 const inputClass =
-  "w-full rounded border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600";
+  "w-full w-full rounded-full border border-[var(--edge)] bg-[var(--surface)] px-4 py-2 text-smtext-sm ";
 
 // Nested under the contest edit form, mirroring how TestCaseManager sits
 // under the problem edit form.
@@ -67,7 +67,7 @@ export default function ContestProblemManager({ contestId }: { contestId: string
   const available = problems?.items.filter((p) => !alreadyAdded.has(p.id)) ?? [];
 
   return (
-    <section className="mt-10 border-t border-slate-200 pt-6 dark:border-slate-700">
+    <section className="mt-10 border-t border-[var(--edge)] pt-6 ">
       <h2 className="mb-4 text-lg font-semibold">Contest Problems</h2>
 
       {contest && contest.problems.length > 0 && (
@@ -75,16 +75,16 @@ export default function ContestProblemManager({ contestId }: { contestId: string
           {contest.problems.map((cp) => (
             <div
               key={cp.id}
-              className="flex items-center justify-between rounded border border-slate-200 px-3 py-2 text-sm dark:border-slate-700"
+              className="flex items-center justify-between rounded border border-[var(--edge)] px-3 py-2 text-sm "
             >
               <div className="flex items-center gap-3">
-                <span className="w-6 font-mono text-slate-500">{cp.label}</span>
+                <span className="w-6 font-mono text-[var(--ink-muted)]">{cp.label}</span>
                 <span>{cp.problem.title}</span>
-                <span className="text-xs text-slate-500">{cp.points} pts</span>
+                <span className="text-xs text-[var(--ink-muted)]">{cp.points} pts</span>
               </div>
               <button
                 onClick={() => removeMutation.mutate(cp.problem.id)}
-                className="text-red-600 dark:text-red-400"
+                className="text-[var(--danger-ink)]"
               >
                 Remove
               </button>
@@ -135,13 +135,13 @@ export default function ContestProblemManager({ contestId }: { contestId: string
         <button
           type="submit"
           disabled={addMutation.isPending}
-          className="rounded bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           Add
         </button>
       </form>
 
-      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-sm text-[var(--danger-ink)]">{error}</p>}
     </section>
   );
 }

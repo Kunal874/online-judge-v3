@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
     <main className="mx-auto flex max-w-sm flex-col gap-4 px-4 py-24">
       <h1 className="text-2xl font-semibold">Forgot password</h1>
       {submitted ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[var(--ink-muted)]">
           If that email is registered, we've sent a link to reset your password.
         </p>
       ) : (
@@ -35,12 +35,12 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-600"
+            className="w-full rounded-full border border-[var(--edge)] bg-[var(--surface)] px-4 py-2 text-sm"
           />
           <button
             type="submit"
             disabled={submitting}
-            className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+            className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
           >
             {submitting ? "Sending..." : "Send reset link"}
           </button>

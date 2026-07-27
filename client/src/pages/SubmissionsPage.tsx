@@ -21,9 +21,9 @@ export default function SubmissionsPage() {
     <main className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="mb-6 text-2xl font-semibold">My Submissions</h1>
 
-      {isPending && <p className="text-slate-500">Loading...</p>}
+      {isPending && <p className="text-[var(--ink-muted)]">Loading...</p>}
       {data && data.items.length === 0 && (
-        <p className="text-slate-500">No submissions yet — solve a problem to see history here.</p>
+        <p className="text-[var(--ink-muted)]">No submissions yet — solve a problem to see history here.</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -31,15 +31,15 @@ export default function SubmissionsPage() {
           <Link
             key={s.id}
             to={`/submissions/${s.id}`}
-            className="flex items-center justify-between rounded border border-slate-200 px-4 py-3 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            className="flex items-center justify-between rounded border border-[var(--edge)] px-4 py-3 hover:bg-[color-mix(in_srgb,var(--ink)_7%,transparent)]"
           >
             <div className="flex items-center gap-3">
               <span className="font-medium">{s.problemTitle}</span>
-              <span className="text-xs text-slate-500">{LANGUAGE_LABELS[s.language]}</span>
-              <span className="text-xs text-slate-400">{new Date(s.createdAt).toLocaleString()}</span>
+              <span className="text-xs text-[var(--ink-muted)]">{LANGUAGE_LABELS[s.language]}</span>
+              <span className="text-xs text-[var(--ink-muted)]">{new Date(s.createdAt).toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-[var(--ink-muted)]">
                 {s.passedCount}/{s.totalCount}
               </span>
               <VerdictBadge verdict={s.verdict} />

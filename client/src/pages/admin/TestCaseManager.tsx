@@ -9,7 +9,7 @@ import {
 } from "../../api/testcases";
 
 const inputClass =
-  "w-full rounded border border-slate-300 bg-transparent px-2 py-1 text-xs font-mono dark:border-slate-600";
+  "w-full rounded border border-[var(--edge)] bg-transparent px-2 py-1 text-xs font-mono ";
 
 export default function TestCaseManager({ problemId }: { problemId: string }) {
   const queryClient = useQueryClient();
@@ -29,13 +29,13 @@ export default function TestCaseManager({ problemId }: { problemId: string }) {
   });
 
   return (
-    <section className="mt-10 border-t border-slate-200 pt-6 dark:border-slate-700">
+    <section className="mt-10 border-t border-[var(--edge)] pt-6 ">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Test Cases</h2>
         <button
           type="button"
           onClick={() => createMutation.mutate()}
-          className="rounded bg-slate-900 px-3 py-1.5 text-sm text-white dark:bg-slate-100 dark:text-slate-900"
+          className="rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-45"
         >
           Add Test Case
         </button>
@@ -46,7 +46,7 @@ export default function TestCaseManager({ problemId }: { problemId: string }) {
           <TestCaseRow key={tc.id} testCase={tc} index={i} problemId={problemId} onChange={invalidate} />
         ))}
         {testCases?.length === 0 && (
-          <p className="text-sm text-slate-500">No test cases yet. Add at least one before publishing.</p>
+          <p className="text-sm text-[var(--ink-muted)]">No test cases yet. Add at least one before publishing.</p>
         )}
       </div>
     </section>
@@ -91,8 +91,8 @@ function TestCaseRow({
   }
 
   return (
-    <div className="rounded border border-slate-200 p-3 dark:border-slate-700">
-      <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
+    <div className="rounded border border-[var(--edge)] p-3 ">
+      <div className="mb-2 flex items-center justify-between text-xs text-[var(--ink-muted)]">
         <span>Test Case #{index + 1}</span>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1">
@@ -107,7 +107,7 @@ function TestCaseRow({
             type="button"
             onClick={() => saveMutation.mutate()}
             disabled={!dirty || saveMutation.isPending}
-            className="text-blue-600 disabled:opacity-40 dark:text-blue-400"
+            className="text-[var(--accent)] disabled:opacity-40"
           >
             {saveMutation.isPending ? "Saving..." : "Save"}
           </button>
@@ -116,7 +116,7 @@ function TestCaseRow({
             onClick={() => {
               if (confirm(`Delete test case #${index + 1}?`)) deleteMutation.mutate();
             }}
-            className="text-red-600 dark:text-red-400"
+            className="text-[var(--danger-ink)]"
           >
             Delete
           </button>
