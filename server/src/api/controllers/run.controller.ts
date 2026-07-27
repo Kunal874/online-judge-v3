@@ -1,12 +1,27 @@
 import type { Request, Response } from "express";
-import type { RunJobStatus } from "@online-judge/shared";
+import type { RunJobStatus, RunRequest } from "@online-judge/shared";
 import { runQueue } from "../../queue/queues.js";
+import { env } from "../../config/env.js";
 import { NotFoundError, UnauthorizedError } from "../../lib/errors.js";
 import { logger } from "../../lib/logger.js";
 
 export async function createRun(req: Request, res: Response) {
   if (!req.user) throw new UnauthorizedError();
-  const job = await runQueue.add("run", { ...req.body, userId: req.user.id });
+
+  // The schema has already bounded these, but its maximum describes what the
+  // protocol accepts rather than what this machine can survive: it allows a
+  // 1 GB container, which on a small host is enough to swap the box out and
+  // take Postgres with it. Clamping here means the ceiling tracks the host's
+  // real capacity, and a request over it is quietly served smaller instead
+  // of being rejected — the limits are the caller's preference, not a
+  // guarantee we owe them.
+  const body = req.body as RunRequest;
+  const job = await runQueue.add("run", {
+    ...body,
+    timeLimitMs: Math.min(body.timeLimitMs, env.JUDGE_MAX_TIME_MS),
+    memoryLimitKb: Math.min(body.memoryLimitKb, env.JUDGE_MAX_MEMORY_KB),
+    userId: req.user.id,
+  });
   res.status(202).json({ jobId: job.id });
 }
 

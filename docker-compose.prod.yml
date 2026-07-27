@@ -51,6 +51,10 @@ services:
       # wrong in either direction breaks rate limiting.
       TRUST_PROXY_HOPS: 2
       REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      # Clamps the client-supplied limits on the Run endpoint down to what
+      # this host can absorb — see .env.production.example.
+      JUDGE_MAX_TIME_MS: ${JUDGE_MAX_TIME_MS:-10000}
+      JUDGE_MAX_MEMORY_KB: ${JUDGE_MAX_MEMORY_KB:-262144}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

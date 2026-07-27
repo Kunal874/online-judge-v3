@@ -73,11 +73,22 @@ export async function registerUser(input: RegisterInput): Promise<User> {
   return user;
 }
 
+// A bcrypt hash of a value nobody can log in with, compared against when no
+// account matches. Without it, an unknown email returns before bcrypt runs
+// and a known one returns after — a ~200ms gap at cost 12 that answers
+// "does this address have an account here" just as clearly as a different
+// error message would.
+const DUMMY_HASH_PROMISE = hashPassword("password-that-matches-no-account");
+
 export async function loginUser(input: LoginInput): Promise<User> {
   const user = await prisma.user.findUnique({ where: { email: input.email } });
+
   // Same generic message whether the email doesn't exist or the password is
-  // wrong — distinguishing them would let an attacker enumerate registered emails.
-  if (!user) throw new UnauthorizedError("Invalid email or password");
+  // wrong — and, via the dummy comparison above, the same timing too.
+  if (!user) {
+    await verifyPassword(input.password, await DUMMY_HASH_PROMISE);
+    throw new UnauthorizedError("Invalid email or password");
+  }
 
   const valid = await verifyPassword(input.password, user.passwordHash);
   if (!valid) throw new UnauthorizedError("Invalid email or password");

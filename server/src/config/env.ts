@@ -35,6 +35,17 @@ const envSchema = z.object({
   DOCKER_SOCKET_PATH: z.string().optional(),
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).default(2),
+  // Ceilings for the ad-hoc Run endpoint, whose time and memory limits come
+  // from the client rather than from a problem's stored configuration.
+  //
+  // The request schema's own maximum is a protocol bound, not a capacity
+  // one: it permits 1 GB, which is more memory than a small host physically
+  // has. Honouring that verbatim lets any signed-in user start containers
+  // large enough to push the machine into swap and get Postgres OOM-killed
+  // — a denial of service that needs no exploit, just the documented API.
+  // These clamp the request down to what this host can actually absorb.
+  JUDGE_MAX_TIME_MS: z.coerce.number().int().min(100).default(10_000),
+  JUDGE_MAX_MEMORY_KB: z.coerce.number().int().min(16_384).default(262_144),
   // Gate running and submitting code behind a verified email address.
   // Off by default because turning it on without working mail delivery
   // locks out every account on the instance, including new ones.
