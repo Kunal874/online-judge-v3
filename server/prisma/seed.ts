@@ -1,5 +1,7 @@
 import { prisma } from "../src/db/prisma.js";
 import { hashPassword } from "../src/lib/password.js";
+import { concepts } from "./concepts.js";
+import { hintsByProblem } from "./hints.js";
 
 interface SeedTestCase {
   input: string;
@@ -426,6 +428,57 @@ if (!existingContest) {
     })),
   });
 }
+
+// ── Stuck ladder ────────────────────────────────────────────────────────
+// Replaced wholesale per problem, so editing a rung's wording in hints.ts
+// actually changes it rather than appending a second copy.
+let hintCount = 0;
+for (const [slug, hints] of Object.entries(hintsByProblem)) {
+  const problem = await prisma.problem.findUnique({ where: { slug }, select: { id: true } });
+  if (!problem) continue;
+
+  await prisma.problemHint.deleteMany({ where: { problemId: problem.id } });
+  await prisma.problemHint.createMany({
+    data: hints.map((hint, orderIndex) => ({ problemId: problem.id, orderIndex, ...hint })),
+  });
+  hintCount += hints.length;
+}
+console.log(`Seeded ${hintCount} hint rungs.`);
+
+// ── Concept graph ───────────────────────────────────────────────────────
+// Upserted by slug and then rewired from scratch, so editing an edge in
+// concepts.ts actually changes the graph rather than layering a second set
+// of arrows on top of the old ones.
+for (const { requires: _requires, ...concept } of concepts) {
+  await prisma.concept.upsert({
+    where: { slug: concept.slug },
+    update: concept,
+    create: concept,
+  });
+}
+
+const conceptIdBySlug = new Map(
+  (await prisma.concept.findMany({ select: { id: true, slug: true } })).map((c) => [c.slug, c.id]),
+);
+
+await prisma.conceptEdge.deleteMany({});
+for (const concept of concepts) {
+  for (const prerequisiteSlug of concept.requires ?? []) {
+    const prerequisiteId = conceptIdBySlug.get(prerequisiteSlug);
+    if (!prerequisiteId) {
+      // A typo here would silently produce an orphan concept that no route
+      // can ever reach, which is far harder to notice than a failed seed.
+      throw new Error(
+        `Concept "${concept.slug}" requires "${prerequisiteSlug}", which is not a known concept.`,
+      );
+    }
+    await prisma.conceptEdge.create({
+      data: { prerequisiteId, dependentId: conceptIdBySlug.get(concept.slug)! },
+    });
+  }
+}
+const edgeCount = await prisma.conceptEdge.count();
+console.log(`Seeded ${concepts.length} concepts with ${edgeCount} prerequisite edges.`);
 
 // Deliberately opt-in via env rather than a hard-coded default password:
 // a seed that always creates a known-credential admin is a live

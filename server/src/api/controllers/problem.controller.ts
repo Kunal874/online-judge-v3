@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import type { ProblemListQuery } from "@online-judge/shared";
 import * as problemService from "../services/problem.service.js";
+import * as hintService from "../services/hint.service.js";
+import { UnauthorizedError } from "../../lib/errors.js";
 
 // Safe because the `validateQuery(problemListQuerySchema)` middleware
 // always runs before these handlers and replaces req.query with parsed data.
@@ -16,6 +18,19 @@ export async function list(req: Request, res: Response) {
 export async function getBySlug(req: Request, res: Response) {
   const problem = await problemService.getPublishedProblemBySlug(req.params.slug!);
   res.json({ problem });
+}
+
+export async function getHints(req: Request, res: Response) {
+  const problem = await problemService.getPublishedProblemBySlug(req.params.slug!);
+  const ladder = await hintService.getLadder(problem.id, req.user?.id);
+  res.json({ ladder });
+}
+
+export async function revealHint(req: Request, res: Response) {
+  if (!req.user) throw new UnauthorizedError();
+  const problem = await problemService.getPublishedProblemBySlug(req.params.slug!);
+  const ladder = await hintService.revealNextRung(problem.id, req.user.id);
+  res.json({ ladder });
 }
 
 export async function adminList(req: Request, res: Response) {

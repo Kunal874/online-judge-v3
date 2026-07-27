@@ -13,6 +13,7 @@ import { adminContestRouter } from "./routes/admin/contest.routes.js";
 import { runRouter } from "./routes/run.routes.js";
 import { submissionRouter } from "./routes/submission.routes.js";
 import { userRouter } from "./routes/user.routes.js";
+import { roadmapRouter } from "./routes/roadmap.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -47,6 +48,7 @@ export function createApp() {
   app.use("/run", runRouter);
   app.use("/submissions", submissionRouter);
   app.use("/users", userRouter);
+  app.use("/roadmap", roadmapRouter);
 
   // Must be last: catches errors from every route above.
   app.use(errorHandler);

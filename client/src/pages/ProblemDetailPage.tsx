@@ -5,6 +5,7 @@ import { LANGUAGES, type Language } from "@online-judge/shared";
 import { fetchProblemBySlug } from "../api/problems";
 import DifficultyBadge from "../components/problems/DifficultyBadge";
 import ProblemStatement from "../components/problems/ProblemStatement";
+import StuckLadder from "../components/problems/StuckLadder";
 import Playground from "../components/editor/Playground";
 import LanguagePicker from "../components/editor/LanguagePicker";
 import Tag from "../components/ui/Tag";
@@ -52,6 +53,7 @@ export default function ProblemDetailPage() {
         </div>
 
         <ProblemStatement problem={problem} />
+        <StuckLadder slug={problem.slug} />
       </section>
 
       <section className="flex min-h-0 flex-col gap-3">

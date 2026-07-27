@@ -7,6 +7,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import RoadmapPage from "./pages/RoadmapPage";
 import ProblemListPage from "./pages/ProblemListPage";
 import ProblemDetailPage from "./pages/ProblemDetailPage";
 import ContestListPage from "./pages/ContestListPage";
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/problems" element={<ProblemListPage />} />
+          <Route path="/roadmap" element={<RoadmapPage />} />
           <Route path="/problems/:slug" element={<ProblemDetailPage />} />
           <Route path="/contests" element={<ContestListPage />} />
           <Route path="/contests/:slug" element={<ContestDetailPage />} />

@@ -41,6 +41,9 @@ export default function Navbar() {
           <NavLink to="/problems" className={navLinkClass}>
             Problems
           </NavLink>
+          <NavLink to="/roadmap" className={navLinkClass}>
+            Roadmap
+          </NavLink>
           <NavLink to="/contests" className={navLinkClass}>
             Contests
           </NavLink>

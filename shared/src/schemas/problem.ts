@@ -50,3 +50,21 @@ export const publicProblemDetailSchema = publicProblemSummarySchema.extend({
   sampleTestCases: z.array(sampleTestCaseSchema),
 });
 export type PublicProblemDetail = z.infer<typeof publicProblemDetailSchema>;
+
+// One rung of the stuck ladder. `body` is null until this user opens it —
+// the server withholds the text rather than the UI hiding it, so an
+// unopened hint genuinely hasn't been given.
+export const hintRungSchema = z.object({
+  orderIndex: z.number(),
+  label: z.string(),
+  revealed: z.boolean(),
+  body: z.string().nullable(),
+});
+
+export const stuckLadderSchema = z.object({
+  total: z.number(),
+  revealedCount: z.number(),
+  rungs: z.array(hintRungSchema),
+});
+export type StuckLadder = z.infer<typeof stuckLadderSchema>;
+export type HintRung = z.infer<typeof hintRungSchema>;

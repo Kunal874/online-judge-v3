@@ -45,6 +45,7 @@ model User {
 
   submissions   Submission[]
   registrations ContestRegistration[]
+  hintReveals   HintReveal[]
 
   @@index([email])
 }
@@ -73,6 +74,8 @@ model Problem {
   testCases       TestCase[]
   submissions     Submission[]
   contestProblems ContestProblem[]
+  hints           ProblemHint[]
+  hintReveals     HintReveal[]
 
   @@index([difficulty])
   @@index([tags], type: Gin)
@@ -220,4 +223,77 @@ model ContestRegistration {
 
   @@unique([contestId, userId])
   @@index([contestId])
+}
+
+// A curriculum expressed as a directed graph rather than an ordered list.
+// The useful question isn't "what comes after chapter 6", it's "what stands
+// between me and lazy propagation" — which is a path query, and only
+// answerable if prerequisites are edges.
+model Concept {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  name    String
+  blurb   String
+  /// Rough ordering hint for layout when two concepts sit at the same graph
+  /// depth. Not a curriculum position — the edges decide that.
+  tier    Int     @default(0)
+
+  // Self-relation through an explicit join model: an edge carries no data
+  // today, but naming it keeps "prerequisite of" readable in queries.
+  prerequisiteOf ConceptEdge[] @relation("prerequisite")
+  requires       ConceptEdge[] @relation("dependent")
+
+  @@index([slug])
+}
+
+model ConceptEdge {
+  id String @id @default(cuid())
+
+  /// The concept that must come first.
+  prerequisiteId String
+  prerequisite   Concept @relation("prerequisite", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  /// The concept it unlocks.
+  dependentId String
+  dependent   Concept @relation("dependent", fields: [dependentId], references: [id], onDelete: Cascade)
+
+  // A prerequisite stated twice is the same statement, and the leaderboard
+  // of a graph is its shape — duplicates would distort every route length.
+  @@unique([prerequisiteId, dependentId])
+  @@index([dependentId])
+}
+
+// The stuck ladder: graded nudges, from a reframing to the full approach.
+// Stored per problem rather than inline in the statement so a rung can be
+// withheld until it is asked for — the whole mechanism is pointless if
+// every hint ships to the browser with the problem.
+model ProblemHint {
+  id         String  @id @default(cuid())
+  problemId  String
+  problem    Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  /// 0-based rung. Lower rungs reframe; the last one gives the approach away.
+  orderIndex Int
+  /// A few words on what kind of help this is — "reframe", "the recurrence".
+  label      String
+  body       String
+
+  @@unique([problemId, orderIndex])
+  @@index([problemId])
+}
+
+// Which rungs a user has opened. Logged, not charged: nothing is deducted
+// for asking, but a solve that needed the full editorial is not the same
+// achievement as one that didn't, and only a record can tell them apart.
+model HintReveal {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId  String
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  orderIndex Int
+  revealedAt DateTime @default(now())
+
+  // Re-opening a rung already seen is not a second reveal.
+  @@unique([userId, problemId, orderIndex])
+  @@index([userId, problemId])
 }
