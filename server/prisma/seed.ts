@@ -53,6 +53,94 @@ function maxSubarrayCase(seed: number): SeedTestCase {
   return { input: `${values.length}\n${values.join(" ")}`, expectedOutput: String(best) };
 }
 
+function modPowCase(queries: [bigint, bigint, bigint][]): SeedTestCase {
+  const answers = queries.map(([a, b, m]) => {
+    let base = a % m;
+    let exponent = b;
+    let result = 1n % m; // 1 % 1 is 0 — the m = 1 case falls out of this rather than needing a branch.
+    while (exponent > 0n) {
+      if (exponent & 1n) result = (result * base) % m;
+      base = (base * base) % m;
+      exponent >>= 1n;
+    }
+    return result.toString();
+  });
+
+  return {
+    input: `${queries.length}\n${queries.map(([a, b, m]) => `${a} ${b} ${m}`).join("\n")}`,
+    expectedOutput: answers.join("\n"),
+  };
+}
+
+function distinctCase(seed: number, n: number): SeedTestCase {
+  const random = makeRandom(seed);
+  const values: number[] = [];
+  // Drawn from a range far smaller than n, so collisions are guaranteed and
+  // the expected answer isn't simply n.
+  for (let i = 0; i < n; i++) values.push(Math.floor(random() * 50_000) - 25_000);
+  return {
+    input: `${n}\n${values.join(" ")}`,
+    expectedOutput: String(new Set(values).size),
+  };
+}
+
+function insertPositionCase(seed: number): SeedTestCase {
+  const random = makeRandom(seed);
+  // 50k each rather than the constraint's 100k: the input is streamed to
+  // the sandbox over an exec pipe, and the full-size version is a 2 MB
+  // payload whose transfer time swamps the runtime being measured. This
+  // still makes linear-per-query 2.5 billion comparisons, which is the
+  // point of the case.
+  const n = 50_000;
+  const q = 50_000;
+
+  const values: number[] = [];
+  let current = -1_000_000_000;
+  for (let i = 0; i < n; i++) {
+    // Steps of zero are allowed, so the array contains duplicates and the
+    // answer has to be a lower bound rather than any matching index.
+    current += Math.floor(random() * 20_000);
+    values.push(current);
+  }
+
+  const queries: number[] = [];
+  const answers: number[] = [];
+  for (let i = 0; i < q; i++) {
+    const x = values[Math.floor(random() * n)]! + (Math.floor(random() * 3) - 1);
+    queries.push(x);
+    // Independent binary search for the expected output.
+    let lo = 0;
+    let hi = n;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (values[mid]! < x) lo = mid + 1;
+      else hi = mid;
+    }
+    answers.push(lo);
+  }
+
+  return {
+    input: `${n} ${q}\n${values.join(" ")}\n${queries.join("\n")}`,
+    expectedOutput: answers.join("\n"),
+  };
+}
+
+function longestRunCase(seed: number): SeedTestCase {
+  const random = makeRandom(seed);
+  const n = 200_000;
+  const values: number[] = [];
+  for (let i = 0; i < n; i++) values.push(Math.floor(random() * 1_000_000) - 500_000);
+
+  let best = 1;
+  let run = 1;
+  for (let i = 1; i < n; i++) {
+    run = values[i]! > values[i - 1]! ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+
+  return { input: `${n}\n${values.join(" ")}`, expectedOutput: String(best) };
+}
+
 function longPalindromeCase(length: number, palindromic: boolean): SeedTestCase {
   const random = makeRandom(length + (palindromic ? 1 : 0));
   const half = Array.from({ length: Math.floor(length / 2) }, () =>
@@ -158,6 +246,108 @@ const problems: {
       { input: "8\n-2 -3 4 -1 -2 1 5 -3", expectedOutput: "7" },
       maxSubarrayCase(20260726),
       maxSubarrayCase(987654321),
+    ],
+  },
+  {
+    slug: "count-distinct-elements",
+    title: "Count Distinct Elements",
+    difficulty: "EASY",
+    tags: ["arrays", "hashing"],
+    statement:
+      "The first line contains an integer `n`. The second line contains `n` integers. " +
+      "Print how many distinct values appear.",
+    constraints: "1 <= n <= 200000, -10^9 <= each value <= 10^9",
+    testCases: [
+      { input: "5\n1 2 2 3 1", expectedOutput: "3", isHidden: false },
+      { input: "1\n42", expectedOutput: "1" },
+      { input: "6\n-1 -1 -1 -1 -1 -1", expectedOutput: "1" },
+      // Values beyond 32-bit range, and a size where an O(n^2) pairwise
+      // comparison cannot finish but a hash set is instant.
+      distinctCase(4242, 120_000),
+    ],
+  },
+  {
+    slug: "balanced-brackets",
+    title: "Balanced Brackets",
+    difficulty: "EASY",
+    tags: ["strings", "stacks"],
+    statement:
+      'Given a string of brackets containing only `(`, `)`, `[`, `]`, `{` and `}`, print "YES" ' +
+      'if every bracket is closed by the matching kind in the right order, otherwise "NO".',
+    constraints: "1 <= length of s <= 200000",
+    testCases: [
+      { input: "([]{})", expectedOutput: "YES", isHidden: false },
+      { input: "([)]", expectedOutput: "NO" },
+      { input: "(", expectedOutput: "NO" },
+      { input: ")(", expectedOutput: "NO" },
+      // Deeply nested, so a solution that rebuilds the remaining string on
+      // each match instead of using a stack runs out of time.
+      { input: "(".repeat(100_000) + ")".repeat(100_000), expectedOutput: "YES" },
+      { input: "(".repeat(100_000) + ")".repeat(99_999), expectedOutput: "NO" },
+    ],
+  },
+  {
+    slug: "binary-search-insert-position",
+    title: "Insert Position",
+    difficulty: "MEDIUM",
+    tags: ["arrays", "binary-search"],
+    statement:
+      "The first line contains `n` and `q`. The second line contains `n` integers in " +
+      "non-decreasing order. Each of the next `q` lines contains one query value `x`.\n\n" +
+      "For each query print the number of elements strictly less than `x` — the index at " +
+      "which `x` would be inserted to keep the array sorted.",
+    constraints: "1 <= n, q <= 100000, -10^9 <= values <= 10^9",
+    testCases: [
+      { input: "5 3\n1 3 3 5 8\n3\n0\n9", expectedOutput: "1\n0\n5", isHidden: false },
+      { input: "1 2\n5\n5\n6", expectedOutput: "0\n1" },
+      // Scanning linearly per query is 10^10 operations; binary search is
+      // 100000 * 17.
+      insertPositionCase(777),
+    ],
+  },
+  {
+    slug: "longest-increasing-run",
+    title: "Longest Increasing Run",
+    difficulty: "MEDIUM",
+    tags: ["arrays", "two-pointers"],
+    statement:
+      "The first line contains an integer `n`. The second line contains `n` integers. " +
+      "Print the length of the longest strictly increasing contiguous run.",
+    constraints: "1 <= n <= 200000, -10^9 <= each value <= 10^9",
+    testCases: [
+      { input: "6\n1 2 1 2 3 4", expectedOutput: "4", isHidden: false },
+      { input: "1\n7", expectedOutput: "1" },
+      // Every element equal: no run is ever strictly increasing, so the
+      // answer is 1, not 0 — an off-by-one trap on the initial value.
+      { input: "5\n3 3 3 3 3", expectedOutput: "1" },
+      { input: "5\n5 4 3 2 1", expectedOutput: "1" },
+      longestRunCase(31337),
+    ],
+  },
+  {
+    slug: "modular-exponentiation",
+    title: "Modular Exponentiation",
+    difficulty: "HARD",
+    tags: ["math", "number-theory"],
+    statement:
+      "Each of `q` lines contains three integers `a`, `b` and `m`. " +
+      "For each, print `a` raised to the power `b`, modulo `m`.\n\n" +
+      "The exponent is far too large to multiply out one step at a time.",
+    constraints: "1 <= q <= 1000, 0 <= a, b <= 10^18, 1 <= m <= 10^9",
+    testCases: [
+      { input: "2\n2 10 1000\n3 0 7", expectedOutput: "24\n1", isHidden: false },
+      // m = 1 makes every answer 0, including a^0 — the case that breaks a
+      // solution hard-coding "anything to the power zero is one".
+      { input: "1\n5 3 1", expectedOutput: "0" },
+      // Intermediate products exceed 64 bits unless reduced at each step.
+      { input: "1\n999999937 1000000000000000000 999999937", expectedOutput: "0" },
+      // Computed rather than written down: the first version of this case
+      // carried a hand-worked answer that was simply wrong, and a test case
+      // with a wrong expected output fails correct solutions.
+      modPowCase([
+        [2n, 62n, 1_000_000_007n],
+        [123_456_789n, 987_654_321_987_654_321n, 998_244_353n],
+      ]),
     ],
   },
 ];

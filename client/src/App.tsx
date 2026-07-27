@@ -6,6 +6,7 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import ProblemListPage from "./pages/ProblemListPage";
 import ProblemDetailPage from "./pages/ProblemDetailPage";
 import ContestListPage from "./pages/ContestListPage";
@@ -50,8 +51,11 @@ export default function App() {
           <Route path="/contests/:slug" element={<ContestDetailPage />} />
           <Route path="/contests/:slug/leaderboard" element={<ContestLeaderboardPage />} />
           <Route path="/contests/:slug/problems/:label" element={<ContestProblemPage />} />
+          {/* Public: the profile is the artefact people link to. */}
+          <Route path="/u/:handle" element={<ProfilePage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/submissions" element={<SubmissionsPage />} />
             <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
           </Route>

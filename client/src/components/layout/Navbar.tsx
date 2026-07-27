@@ -45,9 +45,14 @@ export default function Navbar() {
             Contests
           </NavLink>
           {user && (
-            <NavLink to="/submissions" className={navLinkClass}>
-              Submissions
-            </NavLink>
+            <>
+              <NavLink to="/submissions" className={navLinkClass}>
+                Submissions
+              </NavLink>
+              <NavLink to="/analytics" className={navLinkClass}>
+                Analytics
+              </NavLink>
+            </>
           )}
           {user?.role === "ADMIN" && (
             <>
